@@ -2,7 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "InputActionValue.h"
 #include "TrainPawn.generated.h"
+
+class UCameraComponent;
+class USpringArmComponent;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
 class MEGAREGIONSIM_API ATrainPawn : public APawn
@@ -18,6 +24,26 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	// Camera Components
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	USpringArmComponent* SpringArmComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UCameraComponent* CameraComp;
+
+	// Enhanced Input
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputMappingContext* DefaultMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* ThrottleAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* BrakeAction;
+
+	void ThrottleInput(const FInputActionValue& Value);
+	void BrakeInput(const FInputActionValue& Value);
 
 	// Train Physics Variables
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics")

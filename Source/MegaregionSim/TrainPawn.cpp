@@ -1,10 +1,29 @@
 #include "TrainPawn.h"
 #include "Math/UnrealMathUtility.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "Components/SceneComponent.h"
 
 ATrainPawn::ATrainPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
+	// Create default root
+	USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+	RootComponent = SceneRoot;
+
+	// Create Camera and Spring Arm
+	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
+	SpringArmComp->SetupAttachment(RootComponent);
+	SpringArmComp->TargetArmLength = 400.0f; // Distance to camera
+	SpringArmComp->bUsePawnControlRotation = true; // Rotate arm based on controller
+
+	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
+	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
+	CameraComp->bUsePawnControlRotation = false; // Camera doesn't rotate relative to arm
+
 	// Default massive weight (e.g. 10000 tons)
 	MassInTons = 10000.0f;
 	MaxTractiveEffort = 500000.0f; // Newtons
@@ -25,6 +44,18 @@ ATrainPawn::ATrainPawn()
 void ATrainPawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Add Enhanced Input Mapping Context
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			if (DefaultMappingContext)
+			{
+				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			}
+		}
+	}
 }
 
 void ATrainPawn::Tick(float DeltaTime)
@@ -61,6 +92,33 @@ void ATrainPawn::Tick(float DeltaTime)
 void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		// Bind Throttle and Brake Actions
+		if (ThrottleAction)
+		{
+			EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Triggered, this, &ATrainPawn::ThrottleInput);
+		}
+		
+		if (BrakeAction)
+		{
+			EnhancedInputComponent->BindAction(BrakeAction, ETriggerEvent::Triggered, this, &ATrainPawn::BrakeInput);
+		}
+	}
+}
+
+void ATrainPawn::ThrottleInput(const FInputActionValue& Value)
+{
+	float ThrottleValue = Value.Get<float>();
+	SetThrottleNotch(CurrentThrottleNotch + (ThrottleValue * 1.0f)); // Increment/Decrement notch
+}
+
+void ATrainPawn::BrakeInput(const FInputActionValue& Value)
+{
+	float BrakeValue = Value.Get<float>();
+	// E.g., positive input reduces target pressure (applies brakes)
+	SetTargetBrakePressure(TargetBrakePipePressure - (BrakeValue * 2.0f));
 }
 
 void ATrainPawn::SetThrottleNotch(float Notch)
