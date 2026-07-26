@@ -10,6 +10,8 @@ class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
 class UTrainHUDWidget;
+class UPhysicsConstraintComponent;
+class USphereComponent;
 
 UCLASS()
 class MEGAREGIONSIM_API ATrainPawn : public APawn

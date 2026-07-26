@@ -7,14 +7,19 @@
 #include "Components/SceneComponent.h"
 #include "TrainHUDWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/BoxComponent.h"
+#include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Components/SphereComponent.h"
 
 ATrainPawn::ATrainPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
-	// Create default root
-	USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-	RootComponent = SceneRoot;
+	// Create physical root body
+	UBoxComponent* LocoBody = CreateDefaultSubobject<UBoxComponent>(TEXT("LocoBody"));
+	RootComponent = LocoBody;
+	LocoBody->SetSimulatePhysics(true);
+	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f * 1000.0f, true); // 10000 tons
 
 	// Create Camera and Spring Arm
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
@@ -26,7 +31,19 @@ ATrainPawn::ATrainPawn()
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false; // Camera doesn't rotate relative to arm
 
-	// Default massive weight (e.g. 10000 tons)
+	// Rear Coupler
+	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("RearCoupler"));
+	RearCoupler->SetupAttachment(RootComponent);
+	RearCoupler->SetRelativeLocation(FVector(-500.0f, 0.0f, 0.0f));
+
+	// Rear Coupler Trigger
+	RearCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("RearCouplerTrigger"));
+	RearCouplerTrigger->SetupAttachment(RearCoupler);
+	RearCouplerTrigger->SetSphereRadius(50.0f);
+	RearCouplerTrigger->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+	RearCouplerTrigger->OnComponentBeginOverlap.AddDynamic(this, &ATrainPawn::OnCouplerOverlap);
+
+	// Default mass variables (physics now driven by LocoBody)
 	MassInTons = 10000.0f;
 	MaxTractiveEffort = 500000.0f; // Newtons
 	
@@ -149,4 +166,24 @@ void ATrainPawn::SetThrottleNotch(float Notch)
 void ATrainPawn::SetTargetBrakePressure(float TargetPressure)
 {
 	TargetBrakePipePressure = FMath::Clamp(TargetPressure, 0.0f, 90.0f);
+}
+
+void ATrainPawn::OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherActor != this && OtherComp && OtherComp->IsSimulatingPhysics())
+	{
+		if (RearAttachedCar != nullptr) return;
+
+		RearCoupler->SetConstrainedComponents(Cast<UPrimitiveComponent>(RootComponent), NAME_None, Cast<UPrimitiveComponent>(OtherComp), NAME_None);
+		
+		RearCoupler->SetLinearXLimit(LCM_Limited, 15.0f);
+		RearCoupler->SetLinearYLimit(LCM_Locked, 0.0f);
+		RearCoupler->SetLinearZLimit(LCM_Locked, 0.0f);
+		
+		RearCoupler->SetAngularSwing1Limit(ACM_Limited, 10.0f);
+		RearCoupler->SetAngularSwing2Limit(ACM_Limited, 10.0f);
+		RearCoupler->SetAngularTwistLimit(ACM_Locked, 0.0f);
+
+		RearAttachedCar = OtherActor;
+	}
 }
