@@ -14,6 +14,11 @@ ATrainPawn::ATrainPawn()
 	MainReservoirPressure = 130.0f;
 	BrakeCylinderPressure = 0.0f;
 	
+	TargetBrakePipePressure = 90.0f;
+	BrakeExhaustRate = 5.0f; // Drops 5 PSI per second
+	BrakeChargeRate = 3.0f;  // Charges 3 PSI per second
+	MaxBrakeForce = 2500000.0f; // Massive brake shoe force in Newtons
+	
 	CurrentThrottleNotch = 0.0f;
 }
 
@@ -26,7 +31,26 @@ void ATrainPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	// Basic throttle logic placeholder
+	// --- Pneumatic Brake Simulation (Fluid Dynamics over time) ---
+	if (TargetBrakePipePressure < BrakePipePressure)
+	{
+		// Exhausting air to apply brakes
+		BrakePipePressure -= BrakeExhaustRate * DeltaTime;
+		if (BrakePipePressure < TargetBrakePipePressure) BrakePipePressure = TargetBrakePipePressure;
+	}
+	else if (TargetBrakePipePressure > BrakePipePressure)
+	{
+		// Pumping air to release brakes
+		BrakePipePressure += BrakeChargeRate * DeltaTime;
+		if (BrakePipePressure > TargetBrakePipePressure) BrakePipePressure = TargetBrakePipePressure;
+	}
+
+	// Calculate Brake Cylinder Pressure (1 PSI pipe drop = 2.5 PSI cylinder increase)
+	// Max cylinder pressure is usually 64 PSI for a 90 PSI pipe.
+	float PressureDrop = 90.0f - BrakePipePressure;
+	BrakeCylinderPressure = FMath::Clamp(PressureDrop * 2.5f, 0.0f, 64.0f);
+
+	// --- Basic throttle logic placeholder ---
 	if (CurrentThrottleNotch > 0.0f)
 	{
 		// Calculate linear force to be applied in the physics solver
@@ -43,4 +67,9 @@ void ATrainPawn::SetThrottleNotch(float Notch)
 {
 	// Locomotives typically have 8 throttle notches
 	CurrentThrottleNotch = FMath::Clamp(Notch, 0.0f, 8.0f);
+}
+
+void ATrainPawn::SetTargetBrakePressure(float TargetPressure)
+{
+	TargetBrakePipePressure = FMath::Clamp(TargetPressure, 0.0f, 90.0f);
 }
