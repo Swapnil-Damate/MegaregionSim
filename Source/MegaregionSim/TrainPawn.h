@@ -83,6 +83,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics|Brakes")
 	float MaxBrakeForce;
 
+	float TimeSinceLastHUDUpdate;
+
 	// Input State
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Input")
 	float CurrentThrottleNotch;

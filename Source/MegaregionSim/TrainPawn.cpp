@@ -59,7 +59,9 @@ ATrainPawn::ATrainPawn()
 	MaxBrakeForce = 2500000.0f; // Massive brake shoe force in Newtons
 	
 	CurrentThrottleNotch = 0.0f;
+	TimeSinceLastHUDUpdate = 0.0f;
 }
+
 
 void ATrainPawn::BeginPlay()
 {
@@ -118,11 +120,16 @@ void ATrainPawn::Tick(float DeltaTime)
 		float AppliedForce = (CurrentThrottleNotch / 8.0f) * MaxTractiveEffort; 
 	}
 
-	// Update HUD if it exists
+	// Update HUD if it exists (Throttled to 10 FPS to prevent Web Browser from hanging the engine)
 	if (HUDWidgetInstance)
 	{
-		// Passing dummy speed of 0 for now until we have actual physics velocity
-		HUDWidgetInstance->UpdateHUDMetrics(0.0f, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch);
+		TimeSinceLastHUDUpdate += DeltaTime;
+		if (TimeSinceLastHUDUpdate >= 0.1f)
+		{
+			// Passing dummy speed of 0 for now until we have actual physics velocity
+			HUDWidgetInstance->UpdateHUDMetrics(0.0f, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch);
+			TimeSinceLastHUDUpdate = 0.0f;
+		}
 	}
 }
 
