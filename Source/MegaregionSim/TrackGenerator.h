@@ -1,0 +1,26 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "TrackGenerator.generated.h"
+
+class UBoxComponent;
+
+UCLASS()
+class MEGAREGIONSIM_API ATrackGenerator : public AActor
+{
+	GENERATED_BODY()
+	
+public:	
+	ATrackGenerator();
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	UBoxComponent* LeftRail;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	UBoxComponent* RightRail;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	UBoxComponent* CrossTies;
+};
