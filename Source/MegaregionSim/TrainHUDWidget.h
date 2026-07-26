@@ -4,7 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "TrainHUDWidget.generated.h"
 
-class UTextBlock;
+class UWebBrowser;
 
 UCLASS()
 class MEGAREGIONSIM_API UTrainHUDWidget : public UUserWidget
@@ -12,19 +12,12 @@ class MEGAREGIONSIM_API UTrainHUDWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	// We use BindWidget so the Unreal Editor knows these map to the visual UI elements
+	// We use BindWidget so the Unreal Editor knows this maps to the visual UI element
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* SpeedText;
+	UWebBrowser* UIBrowser;
 
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* BrakePipePressureText;
+	virtual void NativeConstruct() override;
 
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* BrakeCylinderPressureText;
-
-	UPROPERTY(meta = (BindWidget))
-	UTextBlock* ThrottleNotchText;
-
-	// Function to be called every frame to update the numbers on the screen
+	// Function to be called every frame to update the numbers on the screen via Javascript
 	void UpdateHUDMetrics(float SpeedKmh, float PipePSI, float CylinderPSI, float Throttle);
 };
