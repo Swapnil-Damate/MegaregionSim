@@ -26,6 +26,7 @@ ATrainPawn::ATrainPawn()
 	SpringArmComp->SetupAttachment(RootComponent);
 	SpringArmComp->TargetArmLength = 400.0f; // Distance to camera
 	SpringArmComp->bUsePawnControlRotation = true; // Rotate arm based on controller
+	SpringArmComp->bDoCollisionTest = false;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
