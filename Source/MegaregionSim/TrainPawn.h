@@ -9,6 +9,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
+class UTrainHUDWidget;
 
 UCLASS()
 class MEGAREGIONSIM_API ATrainPawn : public APawn
@@ -44,6 +45,13 @@ public:
 
 	void ThrottleInput(const FInputActionValue& Value);
 	void BrakeInput(const FInputActionValue& Value);
+
+	// UI Integration
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UTrainHUDWidget> HUDWidgetClass;
+
+	UPROPERTY()
+	UTrainHUDWidget* HUDWidgetInstance;
 
 	// Train Physics Variables
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics")

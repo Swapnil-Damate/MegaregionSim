@@ -5,6 +5,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Components/SceneComponent.h"
+#include "TrainHUDWidget.h"
+#include "Blueprint/UserWidget.h"
 
 ATrainPawn::ATrainPawn()
 {
@@ -55,6 +57,16 @@ void ATrainPawn::BeginPlay()
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
 			}
 		}
+
+		// Initialize UI Widget
+		if (HUDWidgetClass)
+		{
+			HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, HUDWidgetClass);
+			if (HUDWidgetInstance)
+			{
+				HUDWidgetInstance->AddToViewport();
+			}
+		}
 	}
 }
 
@@ -86,6 +98,13 @@ void ATrainPawn::Tick(float DeltaTime)
 	{
 		// Calculate linear force to be applied in the physics solver
 		float AppliedForce = (CurrentThrottleNotch / 8.0f) * MaxTractiveEffort; 
+	}
+
+	// Update HUD if it exists
+	if (HUDWidgetInstance)
+	{
+		// Passing dummy speed of 0 for now until we have actual physics velocity
+		HUDWidgetInstance->UpdateHUDMetrics(0.0f, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch);
 	}
 }
 
