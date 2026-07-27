@@ -16,6 +16,9 @@ def generate_blueprint(asset_name, parent_class_path):
     return bp
 
 def run_visual_test():
+    # Load a completely blank map to prevent 5km track from colliding with default floors
+    unreal.EditorLevelLibrary.new_level("/Game/Maps/VisualTestMap")
+    
     editor_subsystem = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
     world = editor_subsystem.get_editor_world()
     
