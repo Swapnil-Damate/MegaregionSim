@@ -121,31 +121,27 @@ void ATrainPawn::BeginPlay()
 		FFileHelper::SaveStringToFile(TEXT("--- NEW PHYSICS RUN (LOCOMOTIVE SPAWNED) ---\n"), *PhysicsLogFilePath);
 	}
 
-	// Add Enhanced Input Mapping Context and Force Possession after 0.5 seconds (bypassing initialization order bugs)
-	FTimerHandle PossessTimer;
-	GetWorld()->GetTimerManager().SetTimer(PossessTimer, [this]()
+	// Initialize Air Brake System
+	MainReservoirPressure = 130.0f; // 130 psi
+	BrakePipePressure = 90.0f;		// 90 psi (Fully released)
+	BrakeCylinderPressure = 0.0f;	// 0 psi
+	TargetBrakePipePressure = 90.0f;
+
+	// Note: Camera possession is now perfectly handled natively by MegaregionGameMode.
+	
+	// Initialize UI Widget automatically using the pure C++ class
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
-		if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+		HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, UTrainHUDWidget::StaticClass());
+		if (HUDWidgetInstance)
 		{
-			// Force possession to prevent spawning as a free-flying spectator in the Open World template
-			PlayerController->Possess(this);
-
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-			{
-				if (DefaultMappingContext)
-				{
-					Subsystem->AddMappingContext(DefaultMappingContext, 0);
-				}
-			}
-
-			// Initialize UI Widget automatically using the pure C++ class
-			HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, UTrainHUDWidget::StaticClass());
-			if (HUDWidgetInstance)
-			{
-				HUDWidgetInstance->AddToViewport();
-			}
+			HUDWidgetInstance->AddToViewport();
+			HUDWidgetInstance->SetTrainPawn(this);
 		}
-	}, 0.5f, false);
+	}
+
+	// Phase 5: Spawn the 8-car Freight Consist automatically
+	SpawnConsist();
 
 	// Phase 2.2: Generate a Contract automatically for the Visual Test!
 	if (UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
@@ -155,6 +151,44 @@ void ATrainPawn::BeginPlay()
 
 	// For the visual test, immediately apply 100% throttle (Notch 8) so it rockets down the track!
 	SetThrottleNotch(8.0f);
+}
+
+void ATrainPawn::SpawnConsist()
+{
+	if (GetLocalRole() != ROLE_Authority) return;
+
+	UClass* ContainerClass = FindObject<UClass>(ANY_PACKAGE, TEXT("/Script/Engine.StaticMeshActor"));
+	if (!ContainerClass) return;
+
+	UStaticMesh* ContainerMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/FinalAssets/FreightContainer.FreightContainer"));
+	
+	FVector SpawnLoc = GetActorLocation();
+	FVector ForwardVec = GetActorForwardVector();
+	
+	AActor* LastCar = this;
+
+	for (int i = 0; i < 8; i++)
+	{
+		// Spawn cars 2000 units behind each other
+		SpawnLoc -= (ForwardVec * 2000.0f);
+		
+		FActorSpawnParameters SpawnParams;
+		AActor* NewCar = GetWorld()->SpawnActor<AActor>(ContainerClass, SpawnLoc, GetActorRotation(), SpawnParams);
+		
+		if (NewCar)
+		{
+			UStaticMeshComponent* MeshComp = NewCar->FindComponentByClass<UStaticMeshComponent>();
+			if (MeshComp && ContainerMesh)
+			{
+				MeshComp->SetStaticMesh(ContainerMesh);
+				MeshComp->SetSimulatePhysics(true);
+				MeshComp->SetMassOverrideInKg(NAME_None, 5000.0f, true); // 5 tons each
+			}
+			
+			// In a full implementation, we'd spawn a UPhysicsConstraintComponent to couple them.
+			// For this prototype, spawning them on the track is sufficient to demonstrate the consist.
+		}
+	}
 }
 
 void ATrainPawn::Tick(float DeltaTime)

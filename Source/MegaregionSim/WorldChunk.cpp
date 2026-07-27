@@ -74,20 +74,45 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 
 void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float StartDist, float EndDist)
 {
-	// A simple approach using ISM for tracks (fast). SplineMeshes are better for perfect bending but ISM is safer for collisions.
+	// A simple approach using ISM for tracks (fast).
 	float TrackMeshLength = 2500.0f; // 25 meters per mesh segment
 	
 	for (float Dist = StartDist; Dist < EndDist; Dist += TrackMeshLength)
 	{
 		FVector StartLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		FRotator StartRot = Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		
-		FTransform TrackTransform;
-		TrackTransform.SetLocation(StartLoc);
-		TrackTransform.SetRotation(StartRot.Quaternion());
-		// Assume mesh is 25m long. 
-		TrackTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f)); 
+		FTransform TrackTransform1;
+		TrackTransform1.SetLocation(StartLoc);
+		TrackTransform1.SetRotation(StartRot.Quaternion());
+		TrackTransform1.SetScale3D(FVector(1.0f, 1.0f, 1.0f)); 
 		
-		TrackMeshISM->AddInstance(TrackTransform);
+		FTransform TrackTransform2;
+		TrackTransform2.SetLocation(StartLoc + (RightVec * 500.0f)); // Double track offset 5 meters
+		TrackTransform2.SetRotation(StartRot.Quaternion());
+		TrackTransform2.SetScale3D(FVector(1.0f, 1.0f, 1.0f)); 
+		
+		TrackMeshISM->AddInstance(TrackTransform1);
+		TrackMeshISM->AddInstance(TrackTransform2);
+	}
+
+	// --- Procedural Stations ---
+	// Roughly every 10km (StartDist % 10000 == 0), spawn a station if we are in an urban zone
+	if (FMath::Fmod(StartDist, 10000.0f) == 0.0f)
+	{
+		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
+		
+		if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
+		{
+			// Spawn a basic Station Platform using Skyscraper mesh (Proxy)
+			FTransform StationTransform;
+			FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+			StationTransform.SetLocation(Loc - (RightVec * 1500.0f));
+			StationTransform.SetScale3D(FVector(0.5f, 5.0f, 0.2f)); // Long, flat platform shape
+			StationTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
+			SkyscraperISM->AddInstance(StationTransform);
+		}
 	}
 }

@@ -111,6 +111,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Train Input")
 	void SetTargetBrakePressure(float TargetPressure);
 
+	void SpawnConsist();
+
 	// Physical Constraints acting as Knuckle Couplers
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coupler")
 	UPhysicsConstraintComponent* RearCoupler;
