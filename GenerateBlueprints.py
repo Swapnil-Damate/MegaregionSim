@@ -1,61 +1,50 @@
 import unreal
-import sys
 
-def create_blueprint_from_cpp(asset_name, package_path, parent_class_path):
-    # Load the C++ class we want to inherit from using unreal.load_class
-    parent_class = unreal.load_class(None, parent_class_path)
-    if not parent_class:
-        unreal.log_error(f"Could not load parent class: {parent_class_path}")
-        return None
-
-    # Create the factory
-    factory = unreal.BlueprintFactory()
-    factory.set_editor_property("ParentClass", parent_class)
-
-    # Get the asset tools
+def generate_blueprints():
+    unreal.log("--- GENERATING MEGAREGION BLUEPRINTS ---")
+    
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
     
-    # Check if it already exists
-    full_path = f"{package_path}/{asset_name}.{asset_name}"
-    if unreal.EditorAssetLibrary.does_asset_exist(full_path):
-        unreal.log_warning(f"Blueprint {asset_name} already exists. Skipping creation.")
-        return unreal.EditorAssetLibrary.load_asset(full_path)
+    # 1. Make Directory
+    unreal.EditorAssetLibrary.make_directory('/Game/Blueprints')
+    
+    # 2. Create Train HUD Widget Blueprint
+    # Note: Python cannot directly create a 'WidgetBlueprint' via normal factories easily, 
+    # so we create a standard Blueprint derived from TrainHUDWidget (if it exists) or UserWidget.
+    hud_class = unreal.load_class(None, '/Script/MegaregionSim.TrainHUDWidget')
+    if not hud_class:
+        hud_class = unreal.load_class(None, '/Script/UMG.UserWidget')
+        
+    hud_factory = unreal.BlueprintFactory()
+    hud_factory.set_editor_property("parent_class", hud_class)
+    
+    hud_bp = None
+    if not unreal.EditorAssetLibrary.does_asset_exist('/Game/Blueprints/WBP_TrainHUD'):
+        hud_bp = asset_tools.create_asset("WBP_TrainHUD", "/Game/Blueprints", unreal.Blueprint, hud_factory)
+        unreal.log_warning("Generated WBP_TrainHUD!")
+    else:
+        unreal.log_warning("WBP_TrainHUD already exists.")
+        hud_bp = unreal.EditorAssetLibrary.load_asset('/Game/Blueprints/WBP_TrainHUD')
 
-    # Create the blueprint asset
-    new_blueprint = asset_tools.create_asset(asset_name, package_path, None, factory)
-    unreal.log(f"Successfully created Blueprint: {asset_name}")
-    return new_blueprint
+    # 3. Create BP_TrainPawn Blueprint
+    train_parent_class = unreal.load_class(None, '/Script/MegaregionSim.TrainPawn')
+    train_factory = unreal.BlueprintFactory()
+    train_factory.set_editor_property("parent_class", train_parent_class)
+    
+    train_bp = None
+    if not unreal.EditorAssetLibrary.does_asset_exist('/Game/Blueprints/BP_TrainPawn'):
+        train_bp = asset_tools.create_asset("BP_TrainPawn", "/Game/Blueprints", unreal.Blueprint, train_factory)
+        unreal.log_warning("Generated BP_TrainPawn!")
+    else:
+        unreal.log_warning("BP_TrainPawn already exists.")
+        train_bp = unreal.EditorAssetLibrary.load_asset('/Game/Blueprints/BP_TrainPawn')
 
-def spawn_proof_of_concept():
-    # Automatically spawn it into the editor level to PROVE it works
-    editor_subsystem = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
-    world = editor_subsystem.get_editor_world()
-    
-    if world:
-        # Spawn BP_TrainPawn
-        bp_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrainPawn")
-        if bp_class:
-            spawn_location = unreal.Vector(0, 0, 500)
-            unreal.EditorLevelLibrary.spawn_actor_from_object(bp_class, spawn_location)
-            unreal.log("SUCCESS: Automated Train Physics Running! Blueprint spawned in level.")
-            
-            # Print massive screen message in UE5 Viewport
-            unreal.SystemLibrary.print_string(world, "SUCCESS: ZERO-MANUAL-ENTRY PIPELINE OPERATIONAL!", True, True, unreal.LinearColor(0, 1, 0, 1), 10.0)
+    # Save all generated assets
+    unreal.EditorAssetLibrary.save_directory('/Game/Blueprints')
 
-def main():
-    unreal.log("Starting Zero-Manual-Entry Blueprint Automation...")
-    
-    # 1. Create BP_TrainPawn
-    pawn_bp = create_blueprint_from_cpp("BP_TrainPawn", "/Game/Blueprints", "/Script/MegaregionSim.TrainPawn")
-    
-    # 2. Create BP_TrainCar
-    car_bp = create_blueprint_from_cpp("BP_TrainCar", "/Game/Blueprints", "/Script/MegaregionSim.TrainCar")
-    
-    # Save the newly created assets
-    unreal.EditorAssetLibrary.save_directory("/Game/Blueprints")
-    
-    # Spawn it to prove it works
-    spawn_proof_of_concept()
+    # Open the Train Blueprint so the user can easily adjust the camera and UI class!
+    if train_bp:
+        unreal.AssetEditorSubsystem().open_editor_for_assets([train_bp])
+        unreal.log_warning("Opened BP_TrainPawn! Please set the Camera Angle and HUDWidgetClass in the Details Panel manually, then hit Compile and Save.")
 
-if __name__ == "__main__":
-    main()
+generate_blueprints()
