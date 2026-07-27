@@ -33,17 +33,17 @@ def run_visual_test():
     unreal.log("--- STARTING ZERO-MANUAL-ENTRY PIPELINE ---")
     
     # 1. Regenerate All Blueprints from Scratch (Fixes C++ CDO memory corruption)
-    hud_bp = generate_blueprint("BP_TrainHUD", "/Script/MegaregionSim.TrainHUDWidget")
-    pawn_bp = generate_blueprint("BP_TrainPawn", "/Script/MegaregionSim.TrainPawn")
-    car_bp = generate_blueprint("BP_TrainCar", "/Script/MegaregionSim.TrainCar")
-    track_bp = generate_blueprint("BP_TrackGenerator", "/Script/MegaregionSim.TrackGenerator")
+    hud_bp = generate_blueprint("BP_TrainHUD_V2", "/Script/MegaregionSim.TrainHUDWidget")
+    pawn_bp = generate_blueprint("BP_TrainPawn_V2", "/Script/MegaregionSim.TrainPawn")
+    car_bp = generate_blueprint("BP_TrainCar_V2", "/Script/MegaregionSim.TrainCar")
+    track_bp = generate_blueprint("BP_TrackGenerator_V2", "/Script/MegaregionSim.TrackGenerator")
     
     unreal.EditorAssetLibrary.save_directory("/Game/Blueprints")
 
     # Load the generated classes
-    track_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrackGenerator")
-    pawn_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrainPawn")
-    car_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrainCar")
+    track_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrackGenerator_V2")
+    pawn_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrainPawn_V2")
+    car_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrainCar_V2")
     
     # 2. Clear Existing Actors (Optional cleanup)
     # Not done here to avoid deleting user stuff, but we can assume empty level
