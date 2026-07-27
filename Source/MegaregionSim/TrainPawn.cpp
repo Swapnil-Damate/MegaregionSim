@@ -75,6 +75,9 @@ ATrainPawn::ATrainPawn()
 	
 	CurrentThrottleNotch = 0.0f;
 	TimeSinceLastHUDUpdate = 0.0f;
+
+	// Possess automatically for the Visual Test!
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
 
@@ -103,6 +106,9 @@ void ATrainPawn::BeginPlay()
 			}
 		}
 	}
+
+	// For the visual test, immediately apply 50% throttle (Notch 4) so it moves!
+	SetThrottleNotch(4.0f);
 }
 
 void ATrainPawn::Tick(float DeltaTime)
@@ -128,11 +134,15 @@ void ATrainPawn::Tick(float DeltaTime)
 	float PressureDrop = 90.0f - BrakePipePressure;
 	BrakeCylinderPressure = FMath::Clamp(PressureDrop * 2.5f, 0.0f, 64.0f);
 
-	// --- Basic throttle logic placeholder ---
+	// --- Basic throttle logic ---
 	if (CurrentThrottleNotch > 0.0f)
 	{
 		// Calculate linear force to be applied in the physics solver
 		float AppliedForce = (CurrentThrottleNotch / 8.0f) * MaxTractiveEffort; 
+		if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
+		{
+			PrimComp->AddForce(ForwardVector * AppliedForce);
+		}
 	}
 
 	// Update HUD if it exists (Throttled to 10 FPS to prevent Web Browser from hanging the engine)
