@@ -12,8 +12,9 @@ class MEGAREGIONSIM_API UTrainHUDWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	// We use BindWidget so the Unreal Editor knows this maps to the visual UI element
-	UPROPERTY(meta = (BindWidget))
+	// Removed BindWidget so the empty python-generated Blueprint can compile!
+	// We will create the WebBrowser dynamically in C++ instead.
+	UPROPERTY()
 	UWebBrowser* UIBrowser;
 
 	virtual void NativeConstruct() override;
