@@ -121,27 +121,31 @@ void ATrainPawn::BeginPlay()
 		FFileHelper::SaveStringToFile(TEXT("--- NEW PHYSICS RUN (LOCOMOTIVE SPAWNED) ---\n"), *PhysicsLogFilePath);
 	}
 
-	// Add Enhanced Input Mapping Context
-	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+	// Add Enhanced Input Mapping Context and Force Possession after 0.5 seconds (bypassing initialization order bugs)
+	FTimerHandle PossessTimer;
+	GetWorld()->GetTimerManager().SetTimer(PossessTimer, [this]()
 	{
-		// Force possession to prevent spawning as a free-flying spectator in the Open World template
-		PlayerController->Possess(this);
-
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
 		{
-			if (DefaultMappingContext)
+			// Force possession to prevent spawning as a free-flying spectator in the Open World template
+			PlayerController->Possess(this);
+
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			{
-				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+				if (DefaultMappingContext)
+				{
+					Subsystem->AddMappingContext(DefaultMappingContext, 0);
+				}
+			}
+
+			// Initialize UI Widget automatically using the pure C++ class
+			HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, UTrainHUDWidget::StaticClass());
+			if (HUDWidgetInstance)
+			{
+				HUDWidgetInstance->AddToViewport();
 			}
 		}
-
-		// Initialize UI Widget automatically using the pure C++ class
-		HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, UTrainHUDWidget::StaticClass());
-		if (HUDWidgetInstance)
-		{
-			HUDWidgetInstance->AddToViewport();
-		}
-	}
+	}, 0.5f, false);
 
 	// Phase 2.2: Generate a Contract automatically for the Visual Test!
 	if (UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
