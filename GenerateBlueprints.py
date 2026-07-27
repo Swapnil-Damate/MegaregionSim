@@ -2,15 +2,15 @@ import unreal
 import sys
 
 def create_blueprint_from_cpp(asset_name, package_path, parent_class_path):
-    # Load the C++ class we want to inherit from
-    parent_class = unreal.EditorAssetLibrary.load_class(parent_class_path)
+    # Load the C++ class we want to inherit from using unreal.load_class
+    parent_class = unreal.load_class(None, parent_class_path)
     if not parent_class:
         unreal.log_error(f"Could not load parent class: {parent_class_path}")
         return None
 
     # Create the factory
     factory = unreal.BlueprintFactory()
-    factory.set_editor_property("parent_class", parent_class)
+    factory.set_editor_property("ParentClass", parent_class)
 
     # Get the asset tools
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
