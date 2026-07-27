@@ -14,7 +14,7 @@ public:
 
 protected:
 	virtual void ConfigureQueries() override;
-	virtual void Execute(class UMassEntitySubsystem& EntitySubsystem, class FMassExecutionContext& Context) override;
+	virtual void Execute(class FMassEntityManager& EntityManager, class FMassExecutionContext& Context) override;
 
 private:
 	FMassEntityQuery EntityQuery;

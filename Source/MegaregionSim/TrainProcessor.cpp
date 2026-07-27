@@ -2,6 +2,7 @@
 #include "TrainFragment.h"
 #include "MassExecutionContext.h"
 #include "MassEntitySubsystem.h"
+#include "MassEntityManager.h"
 
 UTrainProcessor::UTrainProcessor()
 {
@@ -14,9 +15,9 @@ void UTrainProcessor::ConfigureQueries()
 	EntityQuery.AddRequirement<FTrainFragment>(EMassFragmentAccess::ReadWrite);
 }
 
-void UTrainProcessor::Execute(UMassEntitySubsystem& EntitySubsystem, FMassExecutionContext& Context)
+void UTrainProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntitySubsystem, Context, [&Context](FMassExecutionContext& ChunkContext)
+	EntityQuery.ForEachEntityChunk(EntityManager, Context, [&Context](FMassExecutionContext& ChunkContext)
 	{
 		const TArrayView<FTrainFragment> TrainList = ChunkContext.GetMutableFragmentView<FTrainFragment>();
 		float DeltaTime = ChunkContext.GetDeltaTimeSeconds();
