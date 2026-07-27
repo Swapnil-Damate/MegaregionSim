@@ -55,17 +55,17 @@ def run_visual_test():
             track.set_actor_location(unreal.Vector(0, 0, 0), False, False) # Force location
         unreal.log("Spawned 5-Kilometer Track.")
 
-    # 4. Spawn Locomotive
-    loco = unreal.EditorLevelLibrary.spawn_actor_from_object(pawn_class, unreal.Vector(0, 0, 300))
+    # 4. Spawn Locomotive (Offset from 0,0,0 so it doesn't get stuck inside the invisible DefaultPawn)
+    loco = unreal.EditorLevelLibrary.spawn_actor_from_object(pawn_class, unreal.Vector(2000, 0, 300))
     if loco:
-        loco.set_actor_location(unreal.Vector(0, 0, 300), False, False) # Force location
+        loco.set_actor_location(unreal.Vector(2000, 0, 300), False, False) # Force location
         loco.set_editor_property("HUDWidgetClass", hud_bp.generated_class())
         unreal.log("Assigned HUD to Locomotive.")
     
     # 5. Spawn Liquid Tanker (Simulates Coupling Slack & Sloshing)
-    car = unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, unreal.Vector(-2100, 0, 300))
+    car = unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, unreal.Vector(-100, 0, 300))
     if car:
-        car.set_actor_location(unreal.Vector(-2100, 0, 300), False, False) # Force location
+        car.set_actor_location(unreal.Vector(-100, 0, 300), False, False) # Force location
         unreal.log("Spawned Liquid Tanker (Sloshing Enabled by C++ default).")
     
     # 6. Spawn a Roadblock far ahead on the track to test Soft-Body Deformation
