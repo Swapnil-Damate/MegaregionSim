@@ -17,6 +17,12 @@ ATrainCar::ATrainCar()
 	CarBody->SetMassOverrideInKg(NAME_None, MassInTons * 1000.0f, true);
 	CarBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
+	// Lock Physics to 1D rail movement to prevent derailment
+	CarBody->BodyInstance.bLockYTranslation = true;
+	CarBody->BodyInstance.bLockXRotation = true;
+	CarBody->BodyInstance.bLockYRotation = true;
+	CarBody->BodyInstance.bLockZRotation = true;
+
 	// Phase 2.2 Fluid Dynamics
 	bIsLiquidCargo = true; // Default to true so we don't need Python set_editor_property
 

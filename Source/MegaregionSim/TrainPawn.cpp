@@ -27,6 +27,12 @@ ATrainPawn::ATrainPawn()
 	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f * 1000.0f, true); // 10000 tons
 	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
+	// Lock Physics to 1D rail movement to prevent derailment
+	LocoBody->BodyInstance.bLockYTranslation = true;
+	LocoBody->BodyInstance.bLockXRotation = true;
+	LocoBody->BodyInstance.bLockYRotation = true;
+	LocoBody->BodyInstance.bLockZRotation = true;
+
 	// Visual Mesh (Zero-Manual-Entry)
 	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LocoVisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
