@@ -8,7 +8,7 @@ ATrackGenerator::ATrackGenerator()
 	PrimaryActorTick.bCanEverTick = false;
 
 	// Load the final AAA Track Mesh FBX for visuals
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrackMeshAsset(TEXT("StaticMesh'/Game/FinalAssets/Track_Mesh.Track_Mesh'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrackMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	UStaticMesh* TrackMesh = TrackMeshAsset.Object;
 
 	// The base platform (Ties/Ballast) - 5 Kilometers long!
