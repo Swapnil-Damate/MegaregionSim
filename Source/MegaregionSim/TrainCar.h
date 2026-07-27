@@ -8,7 +8,7 @@ class UBoxComponent;
 class UPhysicsConstraintComponent;
 class USphereComponent;
 
-UCLASS()
+UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrainCar : public AActor
 {
 	GENERATED_BODY()

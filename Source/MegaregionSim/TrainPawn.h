@@ -13,7 +13,7 @@ class UTrainHUDWidget;
 class UPhysicsConstraintComponent;
 class USphereComponent;
 
-UCLASS()
+UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrainPawn : public APawn
 {
 	GENERATED_BODY()
