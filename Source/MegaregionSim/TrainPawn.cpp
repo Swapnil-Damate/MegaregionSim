@@ -213,6 +213,20 @@ void ATrainPawn::Tick(float DeltaTime)
 	float PressureDrop = 90.0f - BrakePipePressure;
 	BrakeCylinderPressure = FMath::Clamp(PressureDrop * 2.5f, 0.0f, 64.0f);
 
+	// --- FOOLPROOF INPUT FALLBACK ---
+	// If the user hasn't set up Enhanced Input Blueprints, poll W and S directly!
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (PC->IsInputKeyDown(EKeys::W))
+		{
+			SetThrottleNotch(CurrentThrottleNotch + (2.0f * DeltaTime));
+		}
+		else if (PC->IsInputKeyDown(EKeys::S))
+		{
+			SetThrottleNotch(CurrentThrottleNotch - (2.0f * DeltaTime));
+		}
+	}
+
 	// --- Basic throttle logic ---
 	if (CurrentThrottleNotch > 0.0f)
 	{
