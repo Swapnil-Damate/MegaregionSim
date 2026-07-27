@@ -122,8 +122,11 @@ void ATrainPawn::BeginPlay()
 	}
 
 	// Add Enhanced Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
 	{
+		// Force possession to prevent spawning as a free-flying spectator in the Open World template
+		PlayerController->Possess(this);
+
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			if (DefaultMappingContext)
