@@ -35,15 +35,10 @@ void UEconomySubsystem::InitializeDatabase()
 		FSQLitePreparedStatement CheckStmt;
 		if (CheckStmt.Create(EconomyDB, *CheckWalletQuery))
 		{
-			if (CheckStmt.Step() == ESQLitePreparedStatementStepResult::Row)
+			if (CheckStmt.Step() != ESQLitePreparedStatementStepResult::Row)
 			{
-				int32 Count = 0;
-				CheckStmt.GetColumnValueByIndex(0, Count);
-				if (Count == 0)
-				{
-					FString InsertQuery = TEXT("INSERT INTO PlayerWallet (Id, Balance) VALUES (1, 10000);"); // Start with $10k
-					EconomyDB.Execute(*InsertQuery);
-				}
+				FString InsertQuery = TEXT("INSERT INTO PlayerWallet (Id, Balance) VALUES (1, 10000);"); // Start with $10k
+				EconomyDB.Execute(*InsertQuery);
 			}
 			CheckStmt.Destroy();
 		}
