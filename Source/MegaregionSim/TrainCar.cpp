@@ -17,6 +17,7 @@ ATrainCar::ATrainCar()
 	RootComponent = CarBody;
 	CarBody->SetCollisionProfileName(TEXT("PhysicsActor"));
 	CarBody->SetSimulatePhysics(true);
+	MassInTons = 10.0f; // Scale down default to prevent Chaos float precision errors
 	CarBody->SetMassOverrideInKg(NAME_None, MassInTons * 1000.0f, true);
 	CarBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
@@ -37,6 +38,7 @@ ATrainCar::ATrainCar()
 	{
 		VisualMesh->SetStaticMesh(CubeMeshAsset.Object);
 		VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f));
+		VisualMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
 	
 	CurrentCenterOfMassOffset = FVector::ZeroVector;

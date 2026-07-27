@@ -27,7 +27,7 @@ ATrainPawn::ATrainPawn()
 	RootComponent = LocoBody;
 	LocoBody->SetCollisionProfileName(TEXT("PhysicsActor"));
 	LocoBody->SetSimulatePhysics(true);
-	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f * 1000.0f, true); // 10000 tons
+	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f, true); // 10 tons (Scaled down to prevent Chaos float precision errors)
 	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
 	// Lock Physics to 1D rail movement to prevent derailment
@@ -44,6 +44,7 @@ ATrainPawn::ATrainPawn()
 	{
 		VisualMesh->SetStaticMesh(CubeMeshAsset.Object);
 		VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f)); // Scale to match 20m long box
+		VisualMesh->SetCollisionProfileName(TEXT("NoCollision")); // Critical: Prevent complex compound shape snagging
 	}
 
 	// Create Camera and Spring Arm
@@ -72,8 +73,8 @@ ATrainPawn::ATrainPawn()
 	RearCouplerTrigger->OnComponentBeginOverlap.AddDynamic(this, &ATrainPawn::OnCouplerOverlap);
 
 	// Default mass variables (physics now driven by LocoBody)
-	MassInTons = 10000.0f;
-	MaxTractiveEffort = 500000000.0f; // 500 million Newtons (Needed to overcome 10 million kg mass in UE physics!)
+	MassInTons = 10.0f;
+	MaxTractiveEffort = 500000.0f; // 500,000 Newtons (Scaled down to prevent Chaos solver failure)
 	
 	// Default pressures in PSI (standard US freight brake setup)
 	BrakePipePressure = 90.0f;
@@ -83,7 +84,7 @@ ATrainPawn::ATrainPawn()
 	TargetBrakePipePressure = 90.0f;
 	BrakeExhaustRate = 5.0f; // Drops 5 PSI per second
 	BrakeChargeRate = 3.0f;  // Charges 3 PSI per second
-	MaxBrakeForce = 2500000.0f; // Massive brake shoe force in Newtons
+	MaxBrakeForce = 25000.0f; // Scaled down brake force
 	
 	CurrentThrottleNotch = 0.0f;
 	TimeSinceLastHUDUpdate = 0.0f;

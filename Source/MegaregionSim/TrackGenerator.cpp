@@ -24,6 +24,7 @@ ATrackGenerator::ATrackGenerator()
 	BaseMesh->SetupAttachment(CrossTies);
 	if (CubeMesh) BaseMesh->SetStaticMesh(CubeMesh);
 	BaseMesh->SetRelativeScale3D(FVector(5000.0f, 4.0f, 0.4f)); // Scale the 100x100x100 cube to match the 500,000x400x40 box
+	BaseMesh->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics interference
 
 	// Left Rail
 	LeftRail = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackLeftRail"));
@@ -37,6 +38,7 @@ ATrackGenerator::ATrackGenerator()
 	LeftRailMesh->SetupAttachment(LeftRail);
 	if (CubeMesh) LeftRailMesh->SetStaticMesh(CubeMesh);
 	LeftRailMesh->SetRelativeScale3D(FVector(5000.0f, 0.2f, 0.3f));
+	LeftRailMesh->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics interference
 
 	// Right Rail
 	RightRail = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackRightRail"));
@@ -49,4 +51,5 @@ ATrackGenerator::ATrackGenerator()
 	RightRailMesh->SetupAttachment(RightRail);
 	if (CubeMesh) RightRailMesh->SetStaticMesh(CubeMesh);
 	RightRailMesh->SetRelativeScale3D(FVector(5000.0f, 0.2f, 0.3f));
+	RightRailMesh->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics interference
 }
