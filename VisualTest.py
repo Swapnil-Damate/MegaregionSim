@@ -16,9 +16,7 @@ def generate_blueprint(asset_name, parent_class_path):
     return bp
 
 def run_visual_test():
-    # Load a completely blank map to prevent 5km track from colliding with default floors
-    unreal.EditorLevelLibrary.new_level("/Game/Maps/VisualTestMap")
-    
+    # Use the current level so we have lighting!
     editor_subsystem = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem)
     world = editor_subsystem.get_editor_world()
     
@@ -46,23 +44,32 @@ def run_visual_test():
     
     # 3. Spawn 5-Kilometer Track
     if track_class:
-        unreal.EditorLevelLibrary.spawn_actor_from_object(track_class, unreal.Vector(0, 0, 0))
+        track = unreal.EditorLevelLibrary.spawn_actor_from_object(track_class, unreal.Vector(0, 0, 0))
+        if track:
+            track.set_actor_location(unreal.Vector(0, 0, 0), False, False) # Force location
         unreal.log("Spawned 5-Kilometer Track.")
 
     # 4. Spawn Locomotive
     loco = unreal.EditorLevelLibrary.spawn_actor_from_object(pawn_class, unreal.Vector(0, 0, 300))
     if loco:
+        loco.set_actor_location(unreal.Vector(0, 0, 300), False, False) # Force location
         loco.set_editor_property("HUDWidgetClass", hud_bp.generated_class())
         unreal.log("Assigned HUD to Locomotive.")
     
     # 5. Spawn Liquid Tanker (Simulates Coupling Slack & Sloshing)
     car = unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, unreal.Vector(-2100, 0, 300))
     if car:
+        car.set_actor_location(unreal.Vector(-2100, 0, 300), False, False) # Force location
         unreal.log("Spawned Liquid Tanker (Sloshing Enabled by C++ default).")
     
     # 6. Spawn a Roadblock far ahead on the track to test Soft-Body Deformation
-    unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, unreal.Vector(15000, 0, 300))
+    roadblock = unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, unreal.Vector(15000, 0, 300))
+    if roadblock:
+        roadblock.set_actor_location(unreal.Vector(15000, 0, 300), False, False) # Force location
     unreal.log("Spawned Roadblock for Crash testing!")
+    
+    # Optional: Focus camera on the Locomotive so the user immediately sees it
+    unreal.EditorLevelLibrary.editor_set_game_view(True)
     
     unreal.log("Visual Test Suite ready! Press PLAY in the editor to see UI and Physics!")
     unreal.SystemLibrary.print_string(world, "ALL BLUEPRINTS GENERATED! PRESS PLAY!", True, True, unreal.LinearColor(0, 1, 0, 1), 10.0)
