@@ -38,7 +38,7 @@ void UTrainHUDWidget::NativeConstruct()
 	{
 		// Dynamically find the path to the HTML file in the Content folder
 		FString FilePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() + TEXT("WebUI/HUD.html"));
-		FString FileURI = FString::Printf(TEXT("file://%s"), *FilePath);
+		FString FileURI = FString::Printf(TEXT("file:///%s"), *FilePath);
 		
 		UIBrowser->LoadURL(FileURI);
 	}

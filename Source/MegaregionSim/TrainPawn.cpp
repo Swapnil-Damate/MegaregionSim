@@ -40,10 +40,10 @@ ATrainPawn::ATrainPawn()
 	// Create Camera and Spring Arm
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("LocoSpringArm"));
 	SpringArmComp->SetupAttachment(RootComponent);
-	SpringArmComp->SetRelativeLocation(FVector(0.0f, 0.0f, 400.0f)); // Elevate arm origin above the train
-	SpringArmComp->SetRelativeRotation(FRotator(-20.0f, 0.0f, 0.0f)); // Angle it down
-	SpringArmComp->TargetArmLength = 2500.0f; // Distance to camera (far enough to see 20m train)
-	SpringArmComp->bUsePawnControlRotation = true; // Rotate arm based on controller
+	SpringArmComp->SetRelativeLocation(FVector(0.0f, 0.0f, 800.0f)); // Elevate arm origin above the train
+	SpringArmComp->SetRelativeRotation(FRotator(-30.0f, 45.0f, 0.0f)); // Angle it down and to the side for a cinematic view!
+	SpringArmComp->TargetArmLength = 3500.0f; // Distance to camera (far enough to see 20m train and roadblock)
+	SpringArmComp->bUsePawnControlRotation = false; // Keep camera fixed at this cinematic angle
 	SpringArmComp->bDoCollisionTest = false;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("LocoCamera"));
@@ -64,7 +64,7 @@ ATrainPawn::ATrainPawn()
 
 	// Default mass variables (physics now driven by LocoBody)
 	MassInTons = 10000.0f;
-	MaxTractiveEffort = 500000.0f; // Newtons
+	MaxTractiveEffort = 500000000.0f; // 500 million Newtons (Needed to overcome 10 million kg mass in UE physics!)
 	
 	// Default pressures in PSI (standard US freight brake setup)
 	BrakePipePressure = 90.0f;
