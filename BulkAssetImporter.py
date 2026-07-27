@@ -4,8 +4,13 @@ import os
 def run_bulk_import():
     unreal.log("--- STARTING BULK ASSET IMPORT ---")
     
-    # Define paths
-    raw_assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "RawAssets", "Models"))
+    # Define paths (with fallback for exec() in Unreal)
+    try:
+        base_dir = os.path.dirname(__file__)
+    except NameError:
+        base_dir = "C:/Users/Administrator/MegaregionSim/MegaregionSim"
+        
+    raw_assets_dir = os.path.abspath(os.path.join(base_dir, "RawAssets", "Models"))
     unreal_dest_dir = "/Game/FinalAssets"
     
     if not os.path.exists(raw_assets_dir):
