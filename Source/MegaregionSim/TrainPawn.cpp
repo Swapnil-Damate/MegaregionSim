@@ -22,6 +22,7 @@ ATrainPawn::ATrainPawn()
 	// Create physical root body
 	UBoxComponent* LocoBody = CreateDefaultSubobject<UBoxComponent>(TEXT("LocoBody"));
 	RootComponent = LocoBody;
+	LocoBody->SetCollisionProfileName(TEXT("PhysicsActor"));
 	LocoBody->SetSimulatePhysics(true);
 	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f * 1000.0f, true); // 10000 tons
 	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box

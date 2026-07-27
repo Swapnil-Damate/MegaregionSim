@@ -12,6 +12,7 @@ ATrainCar::ATrainCar()
 
 	CarBody = CreateDefaultSubobject<UBoxComponent>(TEXT("CarBody"));
 	RootComponent = CarBody;
+	CarBody->SetCollisionProfileName(TEXT("PhysicsActor"));
 	CarBody->SetSimulatePhysics(true);
 	CarBody->SetMassOverrideInKg(NAME_None, MassInTons * 1000.0f, true);
 	CarBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box

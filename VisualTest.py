@@ -55,7 +55,7 @@ def run_visual_test():
     # 5. Spawn Liquid Tanker (Simulates Coupling Slack & Sloshing)
     car = unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, unreal.Vector(-2100, 0, 300))
     if car:
-        car.set_editor_property("bIsLiquidCargo", True)
+        car.set_editor_property("is_liquid_cargo", True)
         unreal.log("Spawned Liquid Tanker (Sloshing Enabled).")
     
     # 6. Spawn a Roadblock far ahead on the track to test Soft-Body Deformation
