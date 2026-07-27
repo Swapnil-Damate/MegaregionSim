@@ -25,6 +25,13 @@ void UTrainProcessor::Execute(UMassEntitySubsystem& EntitySubsystem, FMassExecut
 		{
 			FTrainFragment& Train = TrainList[i];
 			
+			// Initialize dynamically if needed
+			if (Train.Throttle == 0.0f)
+			{
+				Train.Position = FVector(FMath::RandRange(-250000.0f, 250000.0f), 0, 0);
+				Train.Throttle = FMath::RandRange(0.1f, 1.0f);
+			}
+
 			// Extremely basic mathematical AI simulation: 
 			// If throttle is applied, accelerate. Update position linearly.
 			float Acceleration = Train.Throttle * 10.0f; // 10 m/s^2 arbitrarily for virtual trains

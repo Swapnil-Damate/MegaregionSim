@@ -28,18 +28,6 @@ void UAutomatedTrainSpawner::SpawnVirtualTrains(int32 Count)
 
 	for (int32 i = 0; i < Count; ++i)
 	{
-		FMassEntityHandle NewEntity = MassSubsystem->CreateEntity(TrainArchetype);
-		
-		if (MassSubsystem->IsEntityValid(NewEntity))
-		{
-			FTrainFragment* TrainData = MassSubsystem->GetFragmentDataPtr<FTrainFragment>(NewEntity);
-			if (TrainData)
-			{
-				// Space them out 500 meters apart randomly
-				TrainData->Position = FVector(FMath::RandRange(-250000.0f, 250000.0f), 0, 0);
-				TrainData->Velocity = 0.0f;
-				TrainData->Throttle = FMath::RandRange(0.1f, 1.0f); // Constant AI throttle
-			}
-		}
+		MassSubsystem->CreateEntity(TrainArchetype);
 	}
 }
