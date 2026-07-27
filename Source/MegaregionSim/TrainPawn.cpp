@@ -107,6 +107,9 @@ ATrainPawn::ATrainPawn()
 
 	// Possess automatically for the Visual Test!
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	
+	// Force spawn even if overlapping tracks
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 }
 
 
