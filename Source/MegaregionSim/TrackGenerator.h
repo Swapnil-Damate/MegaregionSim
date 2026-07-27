@@ -6,7 +6,7 @@
 
 class UBoxComponent;
 
-UCLASS()
+UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrackGenerator : public AActor
 {
 	GENERATED_BODY()

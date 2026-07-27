@@ -3,6 +3,8 @@
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "Components/SphereComponent.h"
 #include "TrainPawn.h"
+#include "Components/StaticMeshComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 ATrainCar::ATrainCar()
 {
@@ -12,6 +14,17 @@ ATrainCar::ATrainCar()
 	RootComponent = CarBody;
 	CarBody->SetSimulatePhysics(true);
 	CarBody->SetMassOverrideInKg(NAME_None, MassInTons * 1000.0f, true);
+	CarBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
+
+	// Visual Mesh
+	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
+	VisualMesh->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+	if (CubeMeshAsset.Succeeded())
+	{
+		VisualMesh->SetStaticMesh(CubeMeshAsset.Object);
+		VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f));
+	}
 	
 	LastVelocity = FVector::ZeroVector;
 

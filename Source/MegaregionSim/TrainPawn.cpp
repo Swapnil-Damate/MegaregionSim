@@ -12,6 +12,8 @@
 #include "Components/BoxComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 ATrainPawn::ATrainPawn()
 {
@@ -22,6 +24,17 @@ ATrainPawn::ATrainPawn()
 	RootComponent = LocoBody;
 	LocoBody->SetSimulatePhysics(true);
 	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f * 1000.0f, true); // 10000 tons
+	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
+
+	// Visual Mesh (Zero-Manual-Entry)
+	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
+	VisualMesh->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+	if (CubeMeshAsset.Succeeded())
+	{
+		VisualMesh->SetStaticMesh(CubeMeshAsset.Object);
+		VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f)); // Scale to match 20m long box
+	}
 
 	// Create Camera and Spring Arm
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));

@@ -27,11 +27,17 @@ def run_visual_test(hud_bp):
         return
 
     # Load Blueprints
+    track_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrackGenerator")
     pawn_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrainPawn")
     car_class = unreal.EditorAssetLibrary.load_blueprint_class("/Game/Blueprints/BP_TrainCar")
     
+    # 0. Spawn 5-Kilometer Track below the trains
+    if track_class:
+        unreal.EditorLevelLibrary.spawn_actor_from_object(track_class, unreal.Vector(0, 0, 0))
+        unreal.log("Spawned 5-Kilometer Track.")
+
     # 1. Spawn Locomotive
-    loco_location = unreal.Vector(0, 0, 100)
+    loco_location = unreal.Vector(0, 0, 300) # Raised to fall onto track
     loco = unreal.EditorLevelLibrary.spawn_actor_from_object(pawn_class, loco_location)
     
     # Inject the HUD Widget Class into the Locomotive so it displays on Play
@@ -40,7 +46,7 @@ def run_visual_test(hud_bp):
         unreal.log("Assigned HUD to Locomotive.")
     
     # 2. Spawn Freight Car right behind it (Simulates Coupling Slack)
-    car_location = unreal.Vector(-1100, 0, 100) # 11 meters behind
+    car_location = unreal.Vector(-2100, 0, 300) # 21 meters behind
     car = unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, car_location)
     
     unreal.log("Visual Test Suite ready! Press PLAY in the editor to see UI and Physics!")
@@ -48,6 +54,13 @@ def run_visual_test(hud_bp):
 
 def main():
     hud_bp = setup_ui_blueprint()
+    
+    # Create Track Blueprint
+    parent_track = unreal.load_class(None, "/Script/MegaregionSim.TrackGenerator")
+    factory = unreal.BlueprintFactory()
+    factory.set_editor_property("ParentClass", parent_track)
+    unreal.AssetToolsHelpers.get_asset_tools().create_asset("BP_TrackGenerator", "/Game/Blueprints", None, factory)
+
     unreal.EditorAssetLibrary.save_directory("/Game/Blueprints")
     run_visual_test(hud_bp)
 
