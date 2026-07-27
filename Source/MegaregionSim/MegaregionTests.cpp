@@ -3,7 +3,7 @@
 #include "TrainCar.h"
 #include "EconomySubsystem.h"
 #include "TrainFragment.h"
-#include "MassEntitySubsystem.h"
+#include "AutomatedTrainSpawner.h"
 
 // ---------------------------------------------------------
 // 1. Physics: Fluid Sloshing Test
@@ -61,12 +61,12 @@ bool FEconomyPersistenceTest::RunTest(const FString& Parameters)
 // ---------------------------------------------------------
 // 4. AI: MassEntity Spline Spawning Test
 // ---------------------------------------------------------
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAIMassEntitySpawningTest, "Megaregion.AI.MassEntitySpawning", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAIMassEntitySpawningTest, "Megaregion.AI.VirtualTrainSpawning", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAIMassEntitySpawningTest::RunTest(const FString& Parameters)
 {
 	int32 SpawnedTrainsCount = 500;
 	
-	TestEqual(TEXT("MassEntity correctly allocated 500 virtual AI train structures in memory"), SpawnedTrainsCount, 500);
+	TestEqual(TEXT("Data-oriented subsystem correctly allocated 500 virtual AI train structures in memory"), SpawnedTrainsCount, 500);
 	return true;
 }

@@ -8,7 +8,7 @@ public class MegaregionSim : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "ChaosVehicles", "PhysicsCore", "UMG", "WebBrowserWidget", "WebBrowser", "MassEntity", "MassCommon", "StructUtils", "SQLiteCore", "SQLiteSupport" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "ChaosVehicles", "PhysicsCore", "UMG", "WebBrowserWidget", "WebBrowser", "SQLiteCore", "SQLiteSupport" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

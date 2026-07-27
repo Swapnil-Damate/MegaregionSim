@@ -1,11 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MassEntityTypes.h"
 #include "TrainFragment.generated.h"
 
 USTRUCT()
-struct MEGAREGIONSIM_API FTrainFragment : public FMassFragment
+struct MEGAREGIONSIM_API FTrainFragment
 {
 	GENERATED_BODY()
 	
