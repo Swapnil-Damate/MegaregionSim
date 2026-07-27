@@ -23,4 +23,14 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
 	UBoxComponent* CrossTies;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	class UStaticMeshComponent* BaseMesh;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	class UStaticMeshComponent* LeftRailMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	class UStaticMeshComponent* RightRailMesh;
 };
