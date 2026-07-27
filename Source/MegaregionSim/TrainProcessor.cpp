@@ -1,13 +1,12 @@
 #include "TrainProcessor.h"
 #include "TrainFragment.h"
-#include "MassCommonFragments.h"
 #include "MassExecutionContext.h"
+#include "MassEntitySubsystem.h"
 
 UTrainProcessor::UTrainProcessor()
 {
 	bAutoRegisterWithProcessingPhases = true;
 	ExecutionFlags = (int32)EProcessorExecutionFlags::All;
-	ExecutionOrder.ExecuteBefore.Add(UE::Mass::ProcessorGroupNames::Avoidance);
 }
 
 void UTrainProcessor::ConfigureQueries()

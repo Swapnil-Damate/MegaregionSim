@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "SQLiteDatabase.h"
+#include "SQLitePreparedStatement.h"
 #include "EconomySubsystem.generated.h"
 
 UCLASS()
