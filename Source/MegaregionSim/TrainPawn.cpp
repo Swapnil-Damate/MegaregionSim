@@ -52,6 +52,15 @@ ATrainPawn::ATrainPawn()
 		VisualMesh->SetCollisionProfileName(TEXT("NoCollision")); // Critical: Prevent complex compound shape snagging
 	}
 
+	// Setup UI Component
+	HUDWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HUDWidget"));
+	HUDWidgetComponent->SetupAttachment(RootComponent);
+	HUDWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	
+	// Setup Phase 4 Proxy Components
+	AcousticsComponent = CreateDefaultSubobject<UTrainAcousticsComponent>(TEXT("AcousticsComponent"));
+	EraVFXManager = CreateDefaultSubobject<UDynamicEraVFXManager>(TEXT("EraVFXManager"));
+
 	// Create Camera and Spring Arm
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("LocoSpringArm"));
 	SpringArmComp->SetupAttachment(RootComponent);
@@ -200,6 +209,22 @@ void ATrainPawn::Tick(float DeltaTime)
 			HUDWidgetInstance->UpdateHUDMetrics(SpeedKmh, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch, Wallet, ContractStr);
 			TimeSinceLastHUDUpdate = 0.0f;
 		}
+	}
+	
+	// Phase 4 Integration: Feed physics data into Audio and VFX Managers
+	float SpeedMetersPerSecond = GetVelocity().Size() * 0.01f;
+	
+	if (AcousticsComponent)
+	{
+		// Proxy Engine RPM calculation (Speed * Throttle)
+		float EngineRPM = 800.0f + (SpeedMetersPerSecond * CurrentThrottleNotch * 5.0f);
+		AcousticsComponent->UpdateEngineAcoustics(EngineRPM, SpeedMetersPerSecond);
+	}
+
+	if (EraVFXManager)
+	{
+		float EngineLoad = CurrentThrottleNotch / 8.0f;
+		EraVFXManager->UpdateVFXState(SpeedMetersPerSecond, EngineLoad);
 	}
 }
 

@@ -2,6 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "ChaosWheeledVehicleMovementComponent.h"
+#include "TrainAcousticsComponent.h"
+#include "DynamicEraVFXManager.h"
 #include "InputActionValue.h"
 #include "TrainPawn.generated.h"
 
@@ -12,6 +15,7 @@ class UInputAction;
 class UTrainHUDWidget;
 class UPhysicsConstraintComponent;
 class USphereComponent;
+class UWidgetComponent;
 
 UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrainPawn : public APawn
@@ -27,6 +31,18 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	// UI Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	UWidgetComponent* HUDWidgetComponent;
+
+	// Acoustics Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Acoustics", meta = (AllowPrivateAccess = "true"))
+	UTrainAcousticsComponent* AcousticsComponent;
+
+	// VFX Manager
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX", meta = (AllowPrivateAccess = "true"))
+	UDynamicEraVFXManager* EraVFXManager;
 
 	// Camera Components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
