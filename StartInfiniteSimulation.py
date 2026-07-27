@@ -3,10 +3,16 @@ import unreal
 def start_infinite_sim():
     unreal.log("--- STARTING INFINITE MEGAREGION SIMULATION ---")
     
-    # 1. Clear old actors (but NOT PlayerStart!)
+    # 1. Clear old actors
     for actor in unreal.EditorLevelLibrary.get_all_level_actors():
-        if actor.get_class().get_name() in ['MasterSimulationController', 'TrackGenerator', 'InfiniteWorldGenerator']:
+        if actor.get_class().get_name() in ['PlayerStart', 'MasterSimulationController', 'TrackGenerator', 'InfiniteWorldGenerator']:
             unreal.EditorLevelLibrary.destroy_actor(actor)
+
+    # 1.5 Spawn a perfect PlayerStart
+    player_start_class = unreal.load_class(None, '/Script/Engine.PlayerStart')
+    if player_start_class:
+        unreal.EditorLevelLibrary.spawn_actor_from_class(player_start_class, unreal.Vector(0, 0, 150))
+        unreal.log_warning("SPAWNED: Perfect PlayerStart at 0,0,150")
 
     # 2. Spawn the Infinite World Generator
     world_gen_class = unreal.load_class(None, '/Script/MegaregionSim.InfiniteWorldGenerator')
