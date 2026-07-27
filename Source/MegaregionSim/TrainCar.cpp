@@ -19,8 +19,6 @@ ATrainCar::ATrainCar()
 
 	// Phase 2.2 Fluid Dynamics
 	bIsLiquidCargo = true; // Default to true so we don't need Python set_editor_property
-	LiquidMassFraction = 0.8f;
-	CurrentSloshOffset = 0.0f;
 
 	// Visual Mesh
 	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
