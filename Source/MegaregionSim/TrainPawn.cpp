@@ -180,6 +180,7 @@ void ATrainPawn::SpawnConsist()
 			UStaticMeshComponent* MeshComp = NewCar->FindComponentByClass<UStaticMeshComponent>();
 			if (MeshComp && ContainerMesh)
 			{
+				MeshComp->SetMobility(EComponentMobility::Movable);
 				MeshComp->SetStaticMesh(ContainerMesh);
 				MeshComp->SetSimulatePhysics(true);
 				MeshComp->SetMassOverrideInKg(NAME_None, 5000.0f, true); // 5 tons each
