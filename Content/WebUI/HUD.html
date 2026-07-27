@@ -50,16 +50,27 @@
 		<h2>Locomotive Telemetry</h2>
 		<div class="metric"><span>Speed</span> <span class="value" id="speed">0 km/h</span></div>
 		<div class="metric"><span>Brake Pipe</span> <span class="value" id="pipe">90 PSI</span></div>
-		<div class="metric"><span>Cylinders</span> <span class="value" id="cylinder">0 PSI</span></div>
+		<div class="metric">
+			<h2>Cylinder</h2>
+			<div class="value"><span id="cyl">0</span> PSI</div>
+		</div>
+		<div class="metric wallet">
+			<h2>Wallet</h2>
+			<div class="value">$<span id="wallet">0</span></div>
+		</div>
 		<div class="metric" style="border:none;"><span>Throttle</span> <span class="value" id="throttle">0</span></div>
 	</div>
 
 	<script>
-		function UpdateTelemetry(speed, pipe, cylinder, throttle) {
-			document.getElementById('speed').innerText = speed + ' km/h';
-			document.getElementById('pipe').innerText = pipe + ' PSI';
-			document.getElementById('cylinder').innerText = cylinder + ' PSI';
-			document.getElementById('throttle').innerText = 'Notch ' + throttle;
+		function UpdateTelemetry(speed, pipe, cyl, throttle, wallet) {
+			document.getElementById('speed').innerText = speed;
+			document.getElementById('pipe').innerText = pipe;
+			document.getElementById('cyl').innerText = cyl;
+			
+			let throtElem = document.getElementById('throttle');
+			throtElem.style.width = throttle + "%";
+
+			document.getElementById('wallet').innerText = wallet.toLocaleString();
 		}
 	</script>
 </body>

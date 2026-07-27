@@ -6,6 +6,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "Components/SceneComponent.h"
 #include "TrainHUDWidget.h"
+#include "EconomySubsystem.h"
+#include "Engine/World.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
@@ -126,8 +128,12 @@ void ATrainPawn::Tick(float DeltaTime)
 		TimeSinceLastHUDUpdate += DeltaTime;
 		if (TimeSinceLastHUDUpdate >= 0.1f)
 		{
-			// Passing dummy speed of 0 for now until we have actual physics velocity
-			HUDWidgetInstance->UpdateHUDMetrics(0.0f, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch);
+			// Fetch Economy Balance
+			UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>();
+			int32 Wallet = EconomySystem ? EconomySystem->GetPlayerBalance() : 0;
+			
+			float SpeedKmh = GetVelocity().Size() * 0.036f; // cm/s to km/h
+			HUDWidgetInstance->UpdateHUDMetrics(SpeedKmh, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch, Wallet);
 			TimeSinceLastHUDUpdate = 0.0f;
 		}
 	}

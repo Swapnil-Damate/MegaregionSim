@@ -19,5 +19,5 @@ public:
 	virtual void NativeConstruct() override;
 
 	// Function to be called every frame to update the numbers on the screen via Javascript
-	void UpdateHUDMetrics(float SpeedKmh, float PipePSI, float CylinderPSI, float Throttle);
+	void UpdateHUDMetrics(float SpeedKmh, float PipePSI, float CylinderPSI, float Throttle, int32 WalletBalance);
 };
