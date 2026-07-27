@@ -1,12 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/WorldSubsystem.h"
+#include "Subsystems/TickableWorldSubsystem.h"
 #include "TrainFragment.h"
 #include "AutomatedTrainSpawner.generated.h"
 
 UCLASS()
-class MEGAREGIONSIM_API UAutomatedTrainSpawner : public UWorldSubsystem, public FTickableGameObject
+class MEGAREGIONSIM_API UAutomatedTrainSpawner : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 
