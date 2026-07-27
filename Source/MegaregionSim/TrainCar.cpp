@@ -138,9 +138,9 @@ void ATrainCar::OnCarHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, 
 	// If the impact is massive (e.g. over 5 Million Newtons of impulse)
 	if (ImpactForce > 5000000.0f)
 	{
-		TArray<USceneComponent*> Children;
-		RootComponent->GetChildrenComponents(true, Children);
-		for (USceneComponent* Child : Children)
+		TArray<USceneComponent*> MeshChildren;
+		RootComponent->GetChildrenComponents(true, MeshChildren);
+		for (USceneComponent* Child : MeshChildren)
 		{
 			UStaticMeshComponent* Mesh = Cast<UStaticMeshComponent>(Child);
 			if (Mesh && Mesh->GetName() == TEXT("VisualMesh"))
