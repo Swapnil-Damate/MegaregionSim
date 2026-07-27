@@ -61,8 +61,15 @@
 		<div class="metric" style="border:none;"><span>Throttle</span> <span class="value" id="throttle">0</span></div>
 	</div>
 
+	<div class="telemetry-panel" style="bottom: 140px;">
+		<h2>Active Contract</h2>
+		<div class="metric" style="border:none;">
+			<span id="contract_text" style="color:#00ff00; font-size:16px;">Waiting for contract...</span>
+		</div>
+	</div>
+
 	<script>
-		function UpdateTelemetry(speed, pipe, cyl, throttle, wallet) {
+		function UpdateTelemetry(speed, pipe, cyl, throttle, wallet, contract) {
 			document.getElementById('speed').innerText = speed;
 			document.getElementById('pipe').innerText = pipe;
 			document.getElementById('cyl').innerText = cyl;
@@ -71,6 +78,10 @@
 			throtElem.style.width = throttle + "%";
 
 			document.getElementById('wallet').innerText = wallet.toLocaleString();
+			
+			if (contract) {
+				document.getElementById('contract_text').innerText = contract;
+			}
 		}
 	</script>
 </body>

@@ -41,14 +41,20 @@ public:
 	USphereComponent* RearCouplerTrigger;
 
 	// Physics Variables
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics")
 	float MassInTons;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Physics|Fluid Dynamics")
+	bool bIsLiquidCargo;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Physics|Fluid Dynamics")
+	FVector CurrentCenterOfMassOffset;
+	
+	// Track velocity to calculate acceleration for sloshing
+	FVector LastVelocity;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
 	float BrakePipePressure; // Current pressure (0 to 90 PSI)
-
-	// Physics offset for sloshing
-	FVector LastVelocity;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
 	float BrakeCylinderPressure;
@@ -63,4 +69,7 @@ public:
 	// Overlap event for automatic coupling
 	UFUNCTION()
 	void OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnCarHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };

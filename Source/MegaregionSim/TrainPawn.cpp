@@ -107,6 +107,12 @@ void ATrainPawn::BeginPlay()
 		}
 	}
 
+	// Phase 2.2: Generate a Contract automatically for the Visual Test!
+	if (UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
+	{
+		EconomySystem->GenerateRandomContract();
+	}
+
 	// For the visual test, immediately apply 50% throttle (Notch 4) so it moves!
 	SetThrottleNotch(4.0f);
 }
@@ -141,6 +147,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		float AppliedForce = (CurrentThrottleNotch / 8.0f) * MaxTractiveEffort; 
 		if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
 		{
+			FVector ForwardVector = GetActorForwardVector();
 			PrimComp->AddForce(ForwardVector * AppliedForce);
 		}
 	}
@@ -151,12 +158,19 @@ void ATrainPawn::Tick(float DeltaTime)
 		TimeSinceLastHUDUpdate += DeltaTime;
 		if (TimeSinceLastHUDUpdate >= 0.1f)
 		{
-			// Fetch Economy Balance
+			// Fetch Economy Balance & Contract
 			UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>();
-			int32 Wallet = EconomySystem ? EconomySystem->GetPlayerBalance() : 0;
+			int32 Wallet = 0;
+			FString ContractStr = TEXT("No Contract");
+			
+			if (EconomySystem)
+			{
+				Wallet = EconomySystem->GetPlayerBalance();
+				ContractStr = EconomySystem->GetActiveContractDetails();
+			}
 			
 			float SpeedKmh = GetVelocity().Size() * 0.036f; // cm/s to km/h
-			HUDWidgetInstance->UpdateHUDMetrics(SpeedKmh, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch, Wallet);
+			HUDWidgetInstance->UpdateHUDMetrics(SpeedKmh, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch, Wallet, ContractStr);
 			TimeSinceLastHUDUpdate = 0.0f;
 		}
 	}

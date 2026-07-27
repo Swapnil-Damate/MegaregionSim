@@ -26,7 +26,12 @@ ATrainCar::ATrainCar()
 		VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f));
 	}
 	
+	bIsLiquidCargo = false;
+	CurrentCenterOfMassOffset = FVector::ZeroVector;
 	LastVelocity = FVector::ZeroVector;
+
+	// Soft-body crash deformation binding
+	CarBody->OnComponentHit.AddDynamic(this, &ATrainCar::OnCarHit);
 
 	// Constraints (Knuckles)
 	FrontCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("FrontCoupler"));
@@ -76,24 +81,15 @@ void ATrainCar::Tick(float DeltaTime)
 	}
 
 	// Calculate Dynamic Sloshing (Fluid shifting forward when braking hard)
-	FVector CurrentVelocity = CarBody->GetPhysicsLinearVelocity();
+	FVector CurrentVelocity = GetVelocity();
 	FVector Acceleration = (CurrentVelocity - LastVelocity) / DeltaTime;
 	LastVelocity = CurrentVelocity;
 
-	// If we are decelerating rapidly (e.g. braking), shift center of mass forward
-	if (Acceleration.X < -100.0f) 
+	if (bIsLiquidCargo)
 	{
-		// Shift Center of Mass dynamically
-		CarBody->SetCenterOfMass(FVector(100.0f, 0, 0));
-	}
-	else if (Acceleration.X > 100.0f)
-	{
-		CarBody->SetCenterOfMass(FVector(-100.0f, 0, 0));
-	}
-	else
-	{
-		// Restore normal COM
-		CarBody->SetCenterOfMass(FVector(0, 0, 0));
+		float SloshAmount = FMath::Clamp(-Acceleration.X * 0.5f, -500.0f, 500.0f); 
+		CurrentCenterOfMassOffset.X = FMath::FInterpTo(CurrentCenterOfMassOffset.X, SloshAmount, DeltaTime, 2.0f);
+		CarBody->SetCenterOfMass(CurrentCenterOfMassOffset);
 	}
 
 	// Calculate localized cylinder pressure based on pipe drop
@@ -130,6 +126,30 @@ void ATrainCar::OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		else
 		{
 			RearAttachedCar = OtherActor;
+		}
+	}
+}
+
+// Phase 2.3 Soft-Body Crash Deformation
+void ATrainCar::OnCarHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	float ImpactForce = NormalImpulse.Size();
+	
+	// If the impact is massive (e.g. over 5 Million Newtons of impulse)
+	if (ImpactForce > 5000000.0f)
+	{
+		TArray<USceneComponent*> Children;
+		RootComponent->GetChildrenComponents(true, Children);
+		for (USceneComponent* Child : Children)
+		{
+			UStaticMeshComponent* Mesh = Cast<UStaticMeshComponent>(Child);
+			if (Mesh && Mesh->GetName() == TEXT("VisualMesh"))
+			{
+				FVector CurrentScale = Mesh->GetRelativeScale3D();
+				// Squash the X (length) and expand the Y/Z (bulge outward)
+				FVector SquashedScale = CurrentScale * FVector(0.5f, 1.2f, 1.2f);
+				Mesh->SetRelativeScale3D(SquashedScale);
+			}
 		}
 	}
 }

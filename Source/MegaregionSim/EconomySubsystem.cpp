@@ -75,3 +75,26 @@ void UEconomySubsystem::AddFunds(int32 Amount)
 		EconomyDB.Execute(*UpdateQuery);
 	}
 }
+
+void UEconomySubsystem::GenerateRandomContract()
+{
+	int32 Reward = FMath::RandRange(5000, 25000);
+	int32 Liters = FMath::RandRange(10000, 50000);
+	
+	TArray<FString> Cargos = {TEXT("Crude Oil"), TEXT("Liquid Hydrogen"), TEXT("Diesel Fuel"), TEXT("Ethanol")};
+	FString SelectedCargo = Cargos[FMath::RandRange(0, Cargos.Num() - 1)];
+
+	TArray<FString> Cities = {TEXT("New Chicago"), TEXT("San Angeles"), TEXT("MegaCity One"), TEXT("Detroit Prime")};
+	FString Destination = Cities[FMath::RandRange(0, Cities.Num() - 1)];
+
+	ActiveContract = FString::Printf(TEXT("Deliver %dL of %s to %s | Reward: $%d"), Liters, *SelectedCargo, *Destination, Reward);
+}
+
+FString UEconomySubsystem::GetActiveContractDetails()
+{
+	if (ActiveContract.IsEmpty())
+	{
+		return TEXT("No Active Contract");
+	}
+	return ActiveContract;
+}

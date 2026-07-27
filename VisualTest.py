@@ -48,6 +48,14 @@ def run_visual_test(hud_bp):
     # 2. Spawn Freight Car right behind it (Simulates Coupling Slack)
     car_location = unreal.Vector(-2100, 0, 300) # 21 meters behind
     car = unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, car_location)
+    if car:
+        car.set_editor_property("bIsLiquidCargo", True)
+        unreal.log("Freight Car converted to Liquid Tanker for sloshing physics!")
+    
+    # 3. Spawn a Roadblock far ahead on the track to test Crash Deformation (Soft-Body)
+    roadblock_location = unreal.Vector(15000, 0, 300) # 150 meters ahead
+    unreal.EditorLevelLibrary.spawn_actor_from_object(car_class, roadblock_location)
+    unreal.log("Spawned Roadblock for Crash testing!")
     
     unreal.log("Visual Test Suite ready! Press PLAY in the editor to see UI and Physics!")
     unreal.SystemLibrary.print_string(world, "UI TEST SUITE READY! PRESS PLAY!", True, True, unreal.LinearColor(0, 1, 0, 1), 10.0)

@@ -21,8 +21,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Economy")
 	void AddFunds(int32 Amount);
 
+	UFUNCTION(BlueprintCallable, Category = "Economy")
+	void GenerateRandomContract();
+
+	UFUNCTION(BlueprintCallable, Category = "Economy")
+	FString GetActiveContractDetails();
+
 private:
 	FSQLiteDatabase EconomyDB;
 	
+	FString ActiveContract;
+
 	void InitializeDatabase();
 };

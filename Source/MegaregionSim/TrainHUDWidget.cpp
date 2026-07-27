@@ -16,7 +16,7 @@ void UTrainHUDWidget::NativeConstruct()
 	}
 }
 
-void UTrainHUDWidget::UpdateHUDMetrics(float SpeedKmh, float PipePSI, float CylinderPSI, float Throttle, int32 WalletBalance)
+void UTrainHUDWidget::UpdateHUDMetrics(float SpeedKmh, float PipePSI, float CylinderPSI, float Throttle, int32 WalletBalance, const FString& ContractDetails)
 {
 	if (UIBrowser)
 	{
@@ -25,7 +25,7 @@ void UTrainHUDWidget::UpdateHUDMetrics(float SpeedKmh, float PipePSI, float Cyli
 		int32 Cyl = FMath::RoundToInt(CylinderPSI);
 		int32 Throt = FMath::RoundToInt(Throttle);
 
-		FString JSCommand = FString::Printf(TEXT("UpdateTelemetry(%d, %d, %d, %d, %d);"), Speed, Pipe, Cyl, Throt, WalletBalance);
+		FString JSCommand = FString::Printf(TEXT("UpdateTelemetry(%d, %d, %d, %d, %d, '%s');"), Speed, Pipe, Cyl, Throt, WalletBalance, *ContractDetails);
 		UIBrowser->ExecuteJavascript(JSCommand);
 	}
 }
