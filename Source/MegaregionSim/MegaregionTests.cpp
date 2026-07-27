@@ -17,7 +17,7 @@ bool FPhysicsSloshingTest::RunTest(const FString& Parameters)
 
 	if (SimulatedDeceleration < -100.0f)
 	{
-		TestEqual(TEXT("Center of Mass correctly shifted forward during extreme braking"), ExpectedCenterOfMassShift.X, 100.0f);
+		TestEqual(TEXT("Center of Mass correctly shifted forward during extreme braking"), ExpectedCenterOfMassShift.X, 100.0);
 	}
 	else
 	{
