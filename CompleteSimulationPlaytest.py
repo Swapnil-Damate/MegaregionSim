@@ -19,11 +19,13 @@ def setup_complete_simulation():
             weather_actor.set_weather_state(unreal.WeatherState.RAIN)
             unreal.log_warning("SPAWNED: MegaregionWeatherSystem [RAIN MODE ACTIVE]")
 
-    # 3. Spawn the TrainPawn! (Spawning far outside the city grid to prevent spawning inside a skyscraper)
-    train_class = unreal.load_class(None, '/Script/MegaregionSim.TrainPawn')
+    # 3. Spawn the Train Blueprint! (Spawns the Blueprint so the HUD and Manual Camera work)
+    train_class = unreal.load_class(None, '/Game/Blueprints/BP_TrainPawn.BP_TrainPawn_C')
     if train_class:
         train_actor = unreal.EditorLevelLibrary.spawn_actor_from_class(train_class, unreal.Vector(0,-30000,500))
-        unreal.log_warning("SPAWNED: Heavy Freight Locomotive & Consist")
+        unreal.log_warning("SPAWNED: BP_TrainPawn (Heavy Freight Locomotive & Consist)")
+    else:
+        unreal.log_error("Could not find BP_TrainPawn! Did you create the Blueprint?")
     
     unreal.log("--- MEGAREGION SETUP COMPLETE ---")
     unreal.log_warning("INSTRUCTIONS: Click PLAY (PIE).")
