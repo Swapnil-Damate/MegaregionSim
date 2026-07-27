@@ -284,6 +284,23 @@ void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 		{
 			EnhancedInputComponent->BindAction(BrakeAction, ETriggerEvent::Triggered, this, &ATrainPawn::BrakeInput);
 		}
+		
+		if (SwitchTrainAction)
+		{
+			EnhancedInputComponent->BindAction(SwitchTrainAction, ETriggerEvent::Started, this, &ATrainPawn::SwitchTrainInput);
+		}
+	}
+}
+
+void ATrainPawn::SwitchTrainInput(const FInputActionValue& Value)
+{
+	// Unpossess the current train and spawn a Drone Camera
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		PlayerController->UnPossess();
+		// In a full implementation, we'd spawn a ADroneCameraPawn here and possess it.
+		// For now, just logging the intent.
+		UE_LOG(LogTemp, Warning, TEXT("Switched to Drone Camera Mode!"));
 	}
 }
 

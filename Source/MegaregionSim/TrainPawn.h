@@ -113,6 +113,11 @@ public:
 
 	void SpawnConsist();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Input")
+	UInputAction* SwitchTrainAction;
+	
+	void SwitchTrainInput(const FInputActionValue& Value);
+
 	// Physical Constraints acting as Knuckle Couplers
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coupler")
 	UPhysicsConstraintComponent* RearCoupler;
