@@ -22,6 +22,11 @@ ATrainPawn::ATrainPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
+	// CRITICAL: Disable Controller Rotation overrides! If true (default), the PlayerController teleports the pawn's rotation every frame, which instantly freezes and breaks the Chaos physics solver!
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+	
 	// Create physical root body
 	UBoxComponent* LocoBody = CreateDefaultSubobject<UBoxComponent>(TEXT("TrainLocoBody"));
 	RootComponent = LocoBody;
@@ -74,7 +79,7 @@ ATrainPawn::ATrainPawn()
 
 	// Default mass variables (physics now driven by LocoBody)
 	MassInTons = 10.0f;
-	MaxTractiveEffort = 500000.0f; // 500,000 Newtons (Scaled down to prevent Chaos solver failure)
+	MaxTractiveEffort = 5000000.0f; // 5 Million Newtons (Scaled down to prevent Chaos solver failure, but strong enough to rocket forward)
 	
 	// Default pressures in PSI (standard US freight brake setup)
 	BrakePipePressure = 90.0f;
@@ -133,8 +138,8 @@ void ATrainPawn::BeginPlay()
 		EconomySystem->GenerateRandomContract();
 	}
 
-	// For the visual test, immediately apply 50% throttle (Notch 4) so it moves!
-	SetThrottleNotch(4.0f);
+	// For the visual test, immediately apply 100% throttle (Notch 8) so it rockets down the track!
+	SetThrottleNotch(8.0f);
 }
 
 void ATrainPawn::Tick(float DeltaTime)
