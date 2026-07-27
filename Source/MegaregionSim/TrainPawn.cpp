@@ -148,9 +148,6 @@ void ATrainPawn::BeginPlay()
 	{
 		EconomySystem->GenerateRandomContract();
 	}
-
-	// For the visual test, immediately apply 100% throttle (Notch 8) so it rockets down the track!
-	SetThrottleNotch(8.0f);
 }
 
 void ATrainPawn::SpawnConsist()

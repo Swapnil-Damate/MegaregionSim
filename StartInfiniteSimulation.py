@@ -3,9 +3,9 @@ import unreal
 def start_infinite_sim():
     unreal.log("--- STARTING INFINITE MEGAREGION SIMULATION ---")
     
-    # 1. Clear old actors
+    # 1. Clear old actors (but NOT PlayerStart!)
     for actor in unreal.EditorLevelLibrary.get_all_level_actors():
-        if actor.get_class().get_name() in ['PlayerStart', 'MasterSimulationController', 'TrackGenerator', 'InfiniteWorldGenerator']:
+        if actor.get_class().get_name() in ['MasterSimulationController', 'TrackGenerator', 'InfiniteWorldGenerator']:
             unreal.EditorLevelLibrary.destroy_actor(actor)
 
     # 2. Spawn the Infinite World Generator
@@ -15,15 +15,6 @@ def start_infinite_sim():
         unreal.log_warning("SPAWNED: Infinite World Chunk Streaming Engine")
     else:
         unreal.log_error("Could not find InfiniteWorldGenerator C++ class!")
-
-    # 3. Spawn the Player Train
-    train_class = unreal.load_class(None, '/Game/Blueprints/BP_TrainPawn.BP_TrainPawn_C')
-    if train_class:
-        # Spawn slightly above the track start
-        player_train = unreal.EditorLevelLibrary.spawn_actor_from_class(train_class, unreal.Vector(0, 0, 150))
-        unreal.log_warning("SPAWNED: Player Train")
-    else:
-        unreal.log_error("Could not find BP_TrainPawn! Please create it manually.")
         
     # 4. Spawn an AI Train ahead of the player
     ai_train_class = unreal.load_class(None, '/Game/Blueprints/BP_AITrain.BP_AITrain_C')
