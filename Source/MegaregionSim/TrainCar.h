@@ -45,7 +45,10 @@ public:
 	float MassInTons;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
-	float BrakePipePressure;
+	float BrakePipePressure; // Current pressure (0 to 90 PSI)
+
+	// Physics offset for sloshing
+	FVector LastVelocity;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
 	float BrakeCylinderPressure;

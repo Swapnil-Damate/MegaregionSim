@@ -11,7 +11,9 @@ ATrainCar::ATrainCar()
 	CarBody = CreateDefaultSubobject<UBoxComponent>(TEXT("CarBody"));
 	RootComponent = CarBody;
 	CarBody->SetSimulatePhysics(true);
-	CarBody->SetMassOverrideInKg(NAME_None, 5000.0f * 1000.0f, true); // Default 5000 tons
+	CarBody->SetMassOverrideInKg(NAME_None, MassInTons * 1000.0f, true);
+	
+	LastVelocity = FVector::ZeroVector;
 
 	// Constraints (Knuckles)
 	FrontCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("FrontCoupler"));
@@ -50,7 +52,6 @@ void ATrainCar::Tick(float DeltaTime)
 	// Pneumatic Brake Line Sharing
 	if (FrontAttachedCar)
 	{
-		// Pull brake pressure from the car in front (propagating from locomotive)
 		if (ATrainCar* FrontCar = Cast<ATrainCar>(FrontAttachedCar))
 		{
 			BrakePipePressure = FMath::FInterpTo(BrakePipePressure, FrontCar->BrakePipePressure, DeltaTime, 5.0f);
@@ -59,11 +60,32 @@ void ATrainCar::Tick(float DeltaTime)
 		{
 			BrakePipePressure = FMath::FInterpTo(BrakePipePressure, Loco->BrakePipePressure, DeltaTime, 5.0f);
 		}
-
-		// Calculate localized cylinder pressure based on pipe drop
-		float PressureDrop = 90.0f - BrakePipePressure;
-		BrakeCylinderPressure = FMath::Clamp(PressureDrop * 2.5f, 0.0f, 64.0f);
 	}
+
+	// Calculate Dynamic Sloshing (Fluid shifting forward when braking hard)
+	FVector CurrentVelocity = CarBody->GetPhysicsLinearVelocity();
+	FVector Acceleration = (CurrentVelocity - LastVelocity) / DeltaTime;
+	LastVelocity = CurrentVelocity;
+
+	// If we are decelerating rapidly (e.g. braking), shift center of mass forward
+	if (Acceleration.X < -100.0f) 
+	{
+		// Shift Center of Mass dynamically
+		CarBody->SetCenterOfMass(FVector(100.0f, 0, 0));
+	}
+	else if (Acceleration.X > 100.0f)
+	{
+		CarBody->SetCenterOfMass(FVector(-100.0f, 0, 0));
+	}
+	else
+	{
+		// Restore normal COM
+		CarBody->SetCenterOfMass(FVector(0, 0, 0));
+	}
+
+	// Calculate localized cylinder pressure based on pipe drop
+	float PressureDrop = 90.0f - BrakePipePressure;
+	BrakeCylinderPressure = FMath::Clamp(PressureDrop * 2.5f, 0.0f, 64.0f);
 }
 
 void ATrainCar::OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
