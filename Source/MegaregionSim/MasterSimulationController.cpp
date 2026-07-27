@@ -15,22 +15,22 @@ AMasterSimulationController::AMasterSimulationController()
 
 	PineTreeISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("PineTreeISM"));
 	PineTreeISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> PineAsset(TEXT("StaticMesh'/Game/FinalAssets/Pine_Tree.Pine_Tree'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> PineAsset(TEXT("StaticMesh'/Game/FinalAssets/Pine_Trunk.Pine_Trunk'"));
 	if (PineAsset.Succeeded()) PineTreeISM->SetStaticMesh(PineAsset.Object);
 
 	SkyscraperISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SkyscraperISM"));
 	SkyscraperISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SkyAsset(TEXT("StaticMesh'/Game/FinalAssets/Skyscraper.Skyscraper'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SkyAsset(TEXT("StaticMesh'/Game/FinalAssets/Skyscraper_Base.Skyscraper_Base'"));
 	if (SkyAsset.Succeeded()) SkyscraperISM->SetStaticMesh(SkyAsset.Object);
 
 	GrassISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GrassISM"));
 	GrassISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassAsset(TEXT("StaticMesh'/Game/FinalAssets/Grass_patch.Grass_patch'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassAsset(TEXT("StaticMesh'/Game/FinalAssets/Grass_Cluster_1_Blade_0.Grass_Cluster_1_Blade_0'"));
 	if (GrassAsset.Succeeded()) GrassISM->SetStaticMesh(GrassAsset.Object);
 	
 	SignalISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SignalISM"));
 	SignalISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Modern_LED_Signal_.Modern_LED_Signal_'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Signal_Head.Signal_Head'"));
 	if (SignalAsset.Succeeded()) SignalISM->SetStaticMesh(SignalAsset.Object);
 }
 

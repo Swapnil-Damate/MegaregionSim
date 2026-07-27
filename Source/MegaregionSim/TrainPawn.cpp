@@ -45,7 +45,7 @@ ATrainPawn::ATrainPawn()
 	// Visual Mesh (Final AAA Asset)
 	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LocoVisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("StaticMesh'/Game/FinalAssets/Diesel_Locomotive.Diesel_Locomotive'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("StaticMesh'/Game/FinalAssets/Body_LongHood.Body_LongHood'"));
 	if (MeshAsset.Succeeded())
 	{
 		VisualMesh->SetStaticMesh(MeshAsset.Object);
@@ -160,7 +160,7 @@ void ATrainPawn::SpawnConsist()
 	UClass* ContainerClass = FindObject<UClass>(nullptr, TEXT("/Script/Engine.StaticMeshActor"));
 	if (!ContainerClass) return;
 
-	UStaticMesh* ContainerMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/FinalAssets/FreightContainer.FreightContainer"));
+	UStaticMesh* ContainerMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/FinalAssets/Tank_Body.Tank_Body"));
 	
 	FVector SpawnLoc = GetActorLocation();
 	FVector ForwardVec = GetActorForwardVector();
