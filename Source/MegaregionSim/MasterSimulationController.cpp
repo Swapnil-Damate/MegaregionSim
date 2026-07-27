@@ -57,8 +57,13 @@ void AMasterSimulationController::GenerateEnvironment()
 		{
 			EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(X, Y));
 			
+			// Calculate Procedural Mountains and Valleys using Perlin Noise
+			float NoiseScale = 0.00015f;
+			float ZHeight = FMath::PerlinNoise2D(FVector2D(X * NoiseScale, Y * NoiseScale)) * 12000.0f; 
+			// 12000.0f means hills up to 120m high and valleys up to 120m deep
+
 			FTransform InstanceTransform;
-			InstanceTransform.SetLocation(FVector(X, Y, 0));
+			InstanceTransform.SetLocation(FVector(X, Y, ZHeight));
 			float Scale = FMath::RandRange(0.8f, 1.5f);
 			InstanceTransform.SetScale3D(FVector(Scale));
 			InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
@@ -70,7 +75,11 @@ void AMasterSimulationController::GenerateEnvironment()
 				for (int i = 0; i < 3; i++)
 				{
 					FTransform GrassTransform;
-					GrassTransform.SetLocation(FVector(X + FMath::RandRange(-2000, 2000), Y + FMath::RandRange(-2000, 2000), 0));
+					float GrassX = X + FMath::RandRange(-2000, 2000);
+					float GrassY = Y + FMath::RandRange(-2000, 2000);
+					float GrassZ = FMath::PerlinNoise2D(FVector2D(GrassX * NoiseScale, GrassY * NoiseScale)) * 12000.0f;
+					
+					GrassTransform.SetLocation(FVector(GrassX, GrassY, GrassZ));
 					GrassTransform.SetScale3D(FVector(FMath::RandRange(1.0f, 2.0f)));
 					GrassTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
 					GrassISM->AddInstance(GrassTransform);

@@ -20,6 +20,9 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Megaregion")
+	void GenerateEnvironment();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PCG")
 	UInstancedStaticMeshComponent* PineTreeISM;
 
