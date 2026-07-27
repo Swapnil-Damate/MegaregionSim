@@ -17,6 +17,11 @@ ATrainCar::ATrainCar()
 	CarBody->SetMassOverrideInKg(NAME_None, MassInTons * 1000.0f, true);
 	CarBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
+	// Phase 2.2 Fluid Dynamics
+	bIsLiquidCargo = true; // Default to true so we don't need Python set_editor_property
+	LiquidMassFraction = 0.8f;
+	CurrentSloshOffset = 0.0f;
+
 	// Visual Mesh
 	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
@@ -27,7 +32,6 @@ ATrainCar::ATrainCar()
 		VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f));
 	}
 	
-	bIsLiquidCargo = false;
 	CurrentCenterOfMassOffset = FVector::ZeroVector;
 	LastVelocity = FVector::ZeroVector;
 
