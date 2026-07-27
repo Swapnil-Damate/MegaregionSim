@@ -6,7 +6,7 @@ AMegaregionWeatherSystem::AMegaregionWeatherSystem()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentWeather = EWeatherState::Clear;
-	TimeScale = 1.0f; // 1 degree per second default
+	TimeScale = 0.0f; // Disabled dynamic time to prevent Lumen exposure clipping
 	SunLight = nullptr;
 }
 
