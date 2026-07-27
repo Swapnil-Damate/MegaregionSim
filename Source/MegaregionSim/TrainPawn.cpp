@@ -41,14 +41,15 @@ ATrainPawn::ATrainPawn()
 	LocoBody->BodyInstance.bLockYRotation = true;
 	LocoBody->BodyInstance.bLockZRotation = true;
 
-	// Visual Mesh (Zero-Manual-Entry)
+	// Visual Mesh (Final AAA Asset)
 	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LocoVisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
-	if (CubeMeshAsset.Succeeded())
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("StaticMesh'/Game/FinalAssets/Diesel_Locomotive.Diesel_Locomotive'"));
+	if (MeshAsset.Succeeded())
 	{
-		VisualMesh->SetStaticMesh(CubeMeshAsset.Object);
-		VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f)); // Scale to match 20m long box
+		VisualMesh->SetStaticMesh(MeshAsset.Object);
+		// Note: The FBX scale should inherently be correct now, so reset the massive proxy scale to 1.0f
+		VisualMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f)); 
 		VisualMesh->SetCollisionProfileName(TEXT("NoCollision")); // Critical: Prevent complex compound shape snagging
 	}
 

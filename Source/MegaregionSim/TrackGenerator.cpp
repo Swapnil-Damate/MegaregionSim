@@ -7,9 +7,9 @@ ATrackGenerator::ATrackGenerator()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// Load the default Engine Cube mesh to use for visuals
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
-	UStaticMesh* CubeMesh = CubeMeshAsset.Object;
+	// Load the final AAA Track Mesh FBX for visuals
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrackMeshAsset(TEXT("StaticMesh'/Game/FinalAssets/Track_Mesh.Track_Mesh'"));
+	UStaticMesh* TrackMesh = TrackMeshAsset.Object;
 
 	// The base platform (Ties/Ballast) - 5 Kilometers long!
 	CrossTies = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackCrossTies"));
@@ -22,8 +22,10 @@ ATrackGenerator::ATrackGenerator()
 
 	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackBaseMesh"));
 	BaseMesh->SetupAttachment(CrossTies);
-	if (CubeMesh) BaseMesh->SetStaticMesh(CubeMesh);
-	BaseMesh->SetRelativeScale3D(FVector(5000.0f, 4.0f, 0.4f)); // Scale the 100x100x100 cube to match the 500,000x400x40 box
+	if (TrackMesh) BaseMesh->SetStaticMesh(TrackMesh);
+	// Reset the 5000x proxy scale since the FBX will be correctly sized by PCG later, or we scale the FBX natively.
+	// For now, we will leave the relative scale at 1.0, 1.0, 1.0 (assuming the FBX is a 5km long mesh, or we rely on spline meshes in Phase 5)
+	BaseMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f)); 
 	BaseMesh->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics interference
 
 	// Left Rail
@@ -36,9 +38,8 @@ ATrackGenerator::ATrackGenerator()
 
 	LeftRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackLeftRailMesh"));
 	LeftRailMesh->SetupAttachment(LeftRail);
-	if (CubeMesh) LeftRailMesh->SetStaticMesh(CubeMesh);
-	LeftRailMesh->SetRelativeScale3D(FVector(5000.0f, 0.2f, 0.3f));
-	LeftRailMesh->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics interference
+	// We no longer need separate visual rails because the FBX includes them!
+	LeftRailMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// Right Rail
 	RightRail = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackRightRail"));
@@ -49,7 +50,6 @@ ATrackGenerator::ATrackGenerator()
 
 	RightRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackRightRailMesh"));
 	RightRailMesh->SetupAttachment(RightRail);
-	if (CubeMesh) RightRailMesh->SetStaticMesh(CubeMesh);
-	RightRailMesh->SetRelativeScale3D(FVector(5000.0f, 0.2f, 0.3f));
-	RightRailMesh->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics interference
+	// We no longer need separate visual rails because the FBX includes them!
+	RightRailMesh->SetCollisionProfileName(TEXT("NoCollision"));
 }
