@@ -17,9 +17,9 @@ EZoningClassification UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D 
 	FVector2D Cell = FVector2D(FMath::FloorToFloat(ScaledLoc.X), FMath::FloorToFloat(ScaledLoc.Y));
 	FVector2D Fract = FVector2D(ScaledLoc.X - Cell.X, ScaledLoc.Y - Cell.Y);
 
-	float MinDist = 10.0f;
-	float SecondMinDist = 10.0f;
-	FVector2D NearestSeed;
+	float MinDist = 999999.0f;
+	FVector2D NearestSeed = FVector2D::ZeroVector;
+	float SecondMinDist = 999999.0f;
 
 	for (int y = -1; y <= 1; y++)
 	{

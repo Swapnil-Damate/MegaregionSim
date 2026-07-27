@@ -58,3 +58,9 @@ void UTrainHUDWidget::UpdateHUDMetrics(float SpeedKmh, float BrakePipePressure, 
 		UIBrowser->ExecuteJavascript(JSCommand);
 	}
 }
+
+void UTrainHUDWidget::SetTrainPawn(ATrainPawn* Train)
+{
+	// Implementation for setting the owning train pawn reference.
+	// Currently it's a stub to resolve the linker error since the blueprint might not use the reference immediately.
+}
