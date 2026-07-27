@@ -40,7 +40,9 @@ ATrainPawn::ATrainPawn()
 	// Create Camera and Spring Arm
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
 	SpringArmComp->SetupAttachment(RootComponent);
-	SpringArmComp->TargetArmLength = 400.0f; // Distance to camera
+	SpringArmComp->SetRelativeLocation(FVector(0.0f, 0.0f, 400.0f)); // Elevate arm origin above the train
+	SpringArmComp->SetRelativeRotation(FRotator(-20.0f, 0.0f, 0.0f)); // Angle it down
+	SpringArmComp->TargetArmLength = 2500.0f; // Distance to camera (far enough to see 20m train)
 	SpringArmComp->bUsePawnControlRotation = true; // Rotate arm based on controller
 	SpringArmComp->bDoCollisionTest = false;
 
