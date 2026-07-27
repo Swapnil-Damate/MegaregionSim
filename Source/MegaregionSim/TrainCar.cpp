@@ -170,11 +170,11 @@ void ATrainCar::OnCarHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, 
 
 void ATrainCar::LogPhysicsState()
 {
-	FString LogPath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
+	FString PhysicsLogFilePath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
 	FVector Loc = GetActorLocation();
 	FRotator Rot = GetActorRotation();
 	FVector Vel = GetVelocity();
 	FString LogLine = FString::Printf(TEXT("[TrainCar] Loc=(%f,%f,%f) Rot=(%f,%f,%f) Vel=(%f,%f,%f)\n"), Loc.X, Loc.Y, Loc.Z, Rot.Pitch, Rot.Yaw, Rot.Roll, Vel.X, Vel.Y, Vel.Z);
-	FFileHelper::SaveStringToFile(LogLine, *LogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+	FFileHelper::SaveStringToFile(LogLine, *PhysicsLogFilePath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
 }
 

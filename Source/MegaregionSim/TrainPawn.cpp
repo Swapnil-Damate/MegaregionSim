@@ -100,8 +100,8 @@ void ATrainPawn::BeginPlay()
 	// Clear the physics log file at the start of a new run
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		FString LogPath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
-		FFileHelper::SaveStringToFile(TEXT("--- NEW PHYSICS RUN (LOCOMOTIVE SPAWNED) ---\n"), *LogPath);
+		FString PhysicsLogFilePath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
+		FFileHelper::SaveStringToFile(TEXT("--- NEW PHYSICS RUN (LOCOMOTIVE SPAWNED) ---\n"), *PhysicsLogFilePath);
 	}
 
 	// Add Enhanced Input Mapping Context
@@ -262,11 +262,11 @@ void ATrainPawn::OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 
 void ATrainPawn::LogPhysicsState()
 {
-	FString LogPath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
+	FString PhysicsLogFilePath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
 	FVector Loc = GetActorLocation();
 	FRotator Rot = GetActorRotation();
 	FVector Vel = GetVelocity();
 	FString LogLine = FString::Printf(TEXT("[Locomotive] Loc=(%f,%f,%f) Rot=(%f,%f,%f) Vel=(%f,%f,%f)\n"), Loc.X, Loc.Y, Loc.Z, Rot.Pitch, Rot.Yaw, Rot.Roll, Vel.X, Vel.Y, Vel.Z);
-	FFileHelper::SaveStringToFile(LogLine, *LogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+	FFileHelper::SaveStringToFile(LogLine, *PhysicsLogFilePath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
 }
 
