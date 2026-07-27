@@ -135,14 +135,11 @@ void ATrainPawn::BeginPlay()
 			}
 		}
 
-		// Initialize UI Widget
-		if (HUDWidgetClass)
+		// Initialize UI Widget automatically using the pure C++ class
+		HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, UTrainHUDWidget::StaticClass());
+		if (HUDWidgetInstance)
 		{
-			HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, HUDWidgetClass);
-			if (HUDWidgetInstance)
-			{
-				HUDWidgetInstance->AddToViewport();
-			}
+			HUDWidgetInstance->AddToViewport();
 		}
 	}
 
