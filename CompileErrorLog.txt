@@ -1,0 +1,75 @@
+Using bundled DotNet SDK version: 10.0 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" MegaregionSimEditor Win64 Development -Project="C:\Users\Administrator\MegaregionSim\MegaregionSim\MegaregionSim.uproject" -WaitMutex -FromMsBuild -architecture=x64
+Log file: C:\Users\Administrator\AppData\Local\UnrealBuildTool\Log.txt
+Using 'git status' to determine working set for adaptive non-unity build (C:\Users\Administrator\MegaregionSim\MegaregionSim).
+Building MegaregionSimEditor...
+===== Toolchain Information =====
+Using ISPC compiler (C:\Program Files\Epic Games\UE_5.8\Engine\Source\ThirdParty\Intel\ISPC\bin\Windows\ispc.exe)
+  Intel(r) Implicit SPMD Program Compiler (Intel(r) ISPC), 1.24.0 (build commit  @ 20250404, LLVM 18.1.2) 
+Using Visual Studio 14.50.35737 toolchain (C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+=================================
+Determining max actions to execute in parallel (2 physical cores, 4 logical cores)
+  Executing up to 2 processes, one per physical core
+Using XGE executor to run 4 action(s)
+Distributing 4 actions to XGE
+UnrealBuildTool Compile
+
+--------------------Build System Warning---------------------------------------
+License not activated:
+    License is not activated. Please activate the license in the coordinator.
+    This build will run in standalone mode.
+
+-------------------------------------------------------------------------------
+ 
+Build ID: {5D0DED53-C291-43DD-8D06-7A0E35086A0C}
+ 
+--------------------Project: Default-------------------------------------------
+[1/4] Compile [x64] MegaregionTests.cpp (0:00.32 at +0:00)
+C:\Users\Administrator\MegaregionSim\MegaregionSim\Source\MegaregionSim\MegaregionTests.cpp(20,3): error C2666: 'FAutomationTestBase::TestEqual': overloaded functions have similar conversions
+		TestEqual(TEXT("Center of Mass correctly shifted forward during extreme braking"), ExpectedCenterOfMassShift.X, 100.0f);
+		^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(2039,7): note: could be 'bool FAutomationTestBase::TestEqual(const FString &,const double,const double,double)'
+	bool TestEqual(const FString& What, const double Actual, const double Expected, double Tolerance = UE_KINDA_SMALL_NUMBER)
+	     ^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(2034,7): note: or       'bool FAutomationTestBase::TestEqual(const FString &,const float,const float,float)'
+	bool TestEqual(const FString& What, const float Actual, const float Expected, float Tolerance = UE_KINDA_SMALL_NUMBER)
+	     ^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(2029,7): note: or       'bool FAutomationTestBase::TestEqual(const FString &,const int32,const int32)'
+	bool TestEqual(const FString& What, const int32 Actual, const int32 Expected)
+	     ^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(1989,16): note: or       'bool FAutomationTestBase::TestEqual(const TCHAR *,const double,const double,double)'
+	CORE_API bool TestEqual(const TCHAR* What, const double Actual, const double Expected, double Tolerance = UE_KINDA_SMALL_NUMBER);
+	              ^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(1988,16): note: or       'bool FAutomationTestBase::TestEqual(const TCHAR *,const float,const float,float)'
+	CORE_API bool TestEqual(const TCHAR* What, const float Actual, const float Expected, float Tolerance = UE_KINDA_SMALL_NUMBER);
+	              ^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(1987,16): note: or       'bool FAutomationTestBase::TestEqual(const TCHAR *,const SIZE_T,const SIZE_T)'
+	CORE_API bool TestEqual(const TCHAR* What, const SIZE_T Actual, const SIZE_T Expected);
+	              ^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(1986,16): note: or       'bool FAutomationTestBase::TestEqual(const TCHAR *,const int64,const int64)'
+	CORE_API bool TestEqual(const TCHAR* What, const int64 Actual, const int64 Expected);
+	              ^
+C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Misc\AutomationTest.h(1985,16): note: or       'bool FAutomationTestBase::TestEqual(const TCHAR *,const int32,const int32)'
+	CORE_API bool TestEqual(const TCHAR* What, const int32 Actual, const int32 Expected);
+	              ^
+C:\Users\Administrator\MegaregionSim\MegaregionSim\Source\MegaregionSim\MegaregionTests.cpp(20,3): note: while trying to match the argument list '(const wchar_t [64], T, float)'
+        with
+        [
+            T=double
+        ]
+		TestEqual(TEXT("Center of Mass correctly shifted forward during extreme braking"), ExpectedCenterOfMassShift.X, 100.0f);
+		^
+
+Error executing C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x64\cl.exe (tool returned code: 2)
+---------------------- Done ----------------------
+ 
+    Rebuild All: 0 succeeded, 1 failed, 0 skipped
+ 
+1 build system warning(s):
+   - License not activated
+ 
+Total time in XGE executor: 4.46 seconds
+
+Result: Failed (OtherCompilationError)
+Total execution time: 6.43 seconds
+Trace written to file C:\Users\Administrator\AppData\Local\UnrealBuildTool\Trace.uba with size 1.8kb
