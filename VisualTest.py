@@ -1,10 +1,12 @@
 import unreal
 
 def generate_blueprint(asset_name, parent_class_path):
-    # Try to delete if exists to avoid CDO corruption
     asset_path = "/Game/Blueprints/" + asset_name
+    
+    # If it already exists, just load and return it. Deleting and recreating with the same name causes CDO memory crashes in PIE.
     if unreal.EditorAssetLibrary.does_asset_exist(asset_path):
-        unreal.EditorAssetLibrary.delete_asset(asset_path)
+        unreal.log("Blueprint already exists, skipping generation: " + asset_name)
+        return unreal.EditorAssetLibrary.load_asset(asset_path)
 
     parent_class = unreal.load_class(None, parent_class_path)
     factory = unreal.BlueprintFactory()
@@ -12,6 +14,10 @@ def generate_blueprint(asset_name, parent_class_path):
     asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
     
     bp = asset_tools.create_asset(asset_name, "/Game/Blueprints", None, factory)
+    
+    # Compile the new blueprint so it's fully ready for PIE
+    unreal.BlueprintEditorLibrary.compile_blueprint(bp)
+    
     unreal.log("Generated: " + asset_name)
     return bp
 
