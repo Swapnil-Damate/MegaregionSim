@@ -31,7 +31,7 @@ ATrackGenerator::ATrackGenerator()
 	LeftRail->SetBoxExtent(FVector(250000.0f, 10.0f, 15.0f));
 	// Standard gauge is ~143.5 cm. Place rail 71.75 cm to the left.
 	LeftRail->SetRelativeLocation(FVector(0.0f, -71.75f, 35.0f));
-	LeftRail->SetCollisionProfileName(TEXT("BlockAll"));
+	LeftRail->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics glitches from flat boxes resting on thin edges
 
 	LeftRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackLeftRailMesh"));
 	LeftRailMesh->SetupAttachment(LeftRail);
@@ -43,7 +43,7 @@ ATrackGenerator::ATrackGenerator()
 	RightRail->SetupAttachment(RootComponent);
 	RightRail->SetBoxExtent(FVector(250000.0f, 10.0f, 15.0f));
 	RightRail->SetRelativeLocation(FVector(0.0f, 71.75f, 35.0f));
-	RightRail->SetCollisionProfileName(TEXT("BlockAll"));
+	RightRail->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics glitches from flat boxes resting on thin edges
 
 	RightRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackRightRailMesh"));
 	RightRailMesh->SetupAttachment(RightRail);
