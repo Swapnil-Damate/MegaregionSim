@@ -14,6 +14,9 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
+#include "Misc/Paths.h"
 
 ATrainPawn::ATrainPawn()
 {
@@ -94,6 +97,13 @@ void ATrainPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Clear the physics log file at the start of a new run
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		FString LogPath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
+		FFileHelper::SaveStringToFile(TEXT("--- NEW PHYSICS RUN (LOCOMOTIVE SPAWNED) ---\n"), *LogPath);
+	}
+
 	// Add Enhanced Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -130,6 +140,8 @@ void ATrainPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	LogPhysicsState();
+
 	// --- Pneumatic Brake Simulation (Fluid Dynamics over time) ---
 	if (TargetBrakePipePressure < BrakePipePressure)
 	{
@@ -247,3 +259,14 @@ void ATrainPawn::OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		RearAttachedCar = OtherActor;
 	}
 }
+
+void ATrainPawn::LogPhysicsState()
+{
+	FString LogPath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
+	FVector Loc = GetActorLocation();
+	FRotator Rot = GetActorRotation();
+	FVector Vel = GetVelocity();
+	FString LogLine = FString::Printf(TEXT("[Locomotive] Loc=(%f,%f,%f) Rot=(%f,%f,%f) Vel=(%f,%f,%f)\n"), Loc.X, Loc.Y, Loc.Z, Rot.Pitch, Rot.Yaw, Rot.Roll, Vel.X, Vel.Y, Vel.Z);
+	FFileHelper::SaveStringToFile(LogLine, *LogPath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+}
+

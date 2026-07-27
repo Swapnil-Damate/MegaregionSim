@@ -72,4 +72,6 @@ public:
 
 	UFUNCTION()
 	void OnCarHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	void LogPhysicsState();
 };
