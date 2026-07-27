@@ -33,7 +33,7 @@ void AEmergencyDispatcher::FreezeSignalsToRed(FVector Location, float Radius)
 			ARailwaySignal* Signal = Cast<ARailwaySignal>(SignalActor);
 			if (Signal)
 			{
-				Signal->SetSignalState(false); // Force Red
+				Signal->SetSignalState(ESignalState::Stop); // Force Red
 			}
 		}
 	}

@@ -157,7 +157,7 @@ void ATrainPawn::SpawnConsist()
 {
 	if (GetLocalRole() != ROLE_Authority) return;
 
-	UClass* ContainerClass = FindObject<UClass>(ANY_PACKAGE, TEXT("/Script/Engine.StaticMeshActor"));
+	UClass* ContainerClass = FindObject<UClass>(nullptr, TEXT("/Script/Engine.StaticMeshActor"));
 	if (!ContainerClass) return;
 
 	UStaticMesh* ContainerMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/FinalAssets/FreightContainer.FreightContainer"));

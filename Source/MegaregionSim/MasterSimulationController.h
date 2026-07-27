@@ -36,5 +36,4 @@ public:
 	UInstancedStaticMeshComponent* SignalISM;
 
 private:
-	void GenerateEnvironment();
 };
