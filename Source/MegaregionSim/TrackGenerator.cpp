@@ -12,7 +12,7 @@ ATrackGenerator::ATrackGenerator()
 	UStaticMesh* CubeMesh = CubeMeshAsset.Object;
 
 	// The base platform (Ties/Ballast) - 5 Kilometers long!
-	CrossTies = CreateDefaultSubobject<UBoxComponent>(TEXT("CrossTies"));
+	CrossTies = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackCrossTies"));
 	RootComponent = CrossTies;
 	
 	// Box extent is half-size. 250,000 units = 2.5km. Total length = 5km.
@@ -20,32 +20,32 @@ ATrackGenerator::ATrackGenerator()
 	CrossTies->SetBoxExtent(FVector(250000.0f, 200.0f, 20.0f)); 
 	CrossTies->SetCollisionProfileName(TEXT("BlockAll"));
 
-	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
+	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackBaseMesh"));
 	BaseMesh->SetupAttachment(CrossTies);
 	if (CubeMesh) BaseMesh->SetStaticMesh(CubeMesh);
 	BaseMesh->SetRelativeScale3D(FVector(5000.0f, 4.0f, 0.4f)); // Scale the 100x100x100 cube to match the 500,000x400x40 box
 
 	// Left Rail
-	LeftRail = CreateDefaultSubobject<UBoxComponent>(TEXT("LeftRail"));
+	LeftRail = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackLeftRail"));
 	LeftRail->SetupAttachment(RootComponent);
 	LeftRail->SetBoxExtent(FVector(250000.0f, 10.0f, 15.0f));
 	// Standard gauge is ~143.5 cm. Place rail 71.75 cm to the left.
 	LeftRail->SetRelativeLocation(FVector(0.0f, -71.75f, 35.0f));
 	LeftRail->SetCollisionProfileName(TEXT("BlockAll"));
 
-	LeftRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LeftRailMesh"));
+	LeftRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackLeftRailMesh"));
 	LeftRailMesh->SetupAttachment(LeftRail);
 	if (CubeMesh) LeftRailMesh->SetStaticMesh(CubeMesh);
 	LeftRailMesh->SetRelativeScale3D(FVector(5000.0f, 0.2f, 0.3f));
 
 	// Right Rail
-	RightRail = CreateDefaultSubobject<UBoxComponent>(TEXT("RightRail"));
+	RightRail = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackRightRail"));
 	RightRail->SetupAttachment(RootComponent);
 	RightRail->SetBoxExtent(FVector(250000.0f, 10.0f, 15.0f));
 	RightRail->SetRelativeLocation(FVector(0.0f, 71.75f, 35.0f));
 	RightRail->SetCollisionProfileName(TEXT("BlockAll"));
 
-	RightRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RightRailMesh"));
+	RightRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackRightRailMesh"));
 	RightRailMesh->SetupAttachment(RightRail);
 	if (CubeMesh) RightRailMesh->SetStaticMesh(CubeMesh);
 	RightRailMesh->SetRelativeScale3D(FVector(5000.0f, 0.2f, 0.3f));

@@ -10,7 +10,7 @@ ATrainCar::ATrainCar()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	CarBody = CreateDefaultSubobject<UBoxComponent>(TEXT("CarBody"));
+	CarBody = CreateDefaultSubobject<UBoxComponent>(TEXT("TrainFreightCarBody"));
 	RootComponent = CarBody;
 	CarBody->SetCollisionProfileName(TEXT("PhysicsActor"));
 	CarBody->SetSimulatePhysics(true);
@@ -21,7 +21,7 @@ ATrainCar::ATrainCar()
 	bIsLiquidCargo = true; // Default to true so we don't need Python set_editor_property
 
 	// Visual Mesh
-	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
+	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrainFreightVisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	if (CubeMeshAsset.Succeeded())
@@ -37,22 +37,22 @@ ATrainCar::ATrainCar()
 	CarBody->OnComponentHit.AddDynamic(this, &ATrainCar::OnCarHit);
 
 	// Constraints (Knuckles)
-	FrontCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("FrontCoupler"));
+	FrontCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("FreightFrontCoupler"));
 	FrontCoupler->SetupAttachment(RootComponent);
 	FrontCoupler->SetRelativeLocation(FVector(500.0f, 0.0f, 0.0f));
 	
-	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("RearCoupler"));
+	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("FreightRearCoupler"));
 	RearCoupler->SetupAttachment(RootComponent);
 	RearCoupler->SetRelativeLocation(FVector(-500.0f, 0.0f, 0.0f));
 
 	// Triggers
-	FrontCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("FrontCouplerTrigger"));
+	FrontCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("FreightFrontCouplerTrigger"));
 	FrontCouplerTrigger->SetupAttachment(FrontCoupler);
 	FrontCouplerTrigger->SetSphereRadius(50.0f);
 	FrontCouplerTrigger->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	FrontCouplerTrigger->OnComponentBeginOverlap.AddDynamic(this, &ATrainCar::OnCouplerOverlap);
 
-	RearCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("RearCouplerTrigger"));
+	RearCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("FreightRearCouplerTrigger"));
 	RearCouplerTrigger->SetupAttachment(RearCoupler);
 	RearCouplerTrigger->SetSphereRadius(50.0f);
 	RearCouplerTrigger->SetCollisionProfileName(TEXT("OverlapAllDynamic"));

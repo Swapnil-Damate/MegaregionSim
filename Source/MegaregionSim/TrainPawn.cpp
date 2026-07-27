@@ -20,7 +20,7 @@ ATrainPawn::ATrainPawn()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	// Create physical root body
-	UBoxComponent* LocoBody = CreateDefaultSubobject<UBoxComponent>(TEXT("LocoBody"));
+	UBoxComponent* LocoBody = CreateDefaultSubobject<UBoxComponent>(TEXT("TrainLocoBody"));
 	RootComponent = LocoBody;
 	LocoBody->SetCollisionProfileName(TEXT("PhysicsActor"));
 	LocoBody->SetSimulatePhysics(true);
@@ -28,7 +28,7 @@ ATrainPawn::ATrainPawn()
 	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
 	// Visual Mesh (Zero-Manual-Entry)
-	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
+	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LocoVisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	if (CubeMeshAsset.Succeeded())
@@ -38,7 +38,7 @@ ATrainPawn::ATrainPawn()
 	}
 
 	// Create Camera and Spring Arm
-	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
+	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("LocoSpringArm"));
 	SpringArmComp->SetupAttachment(RootComponent);
 	SpringArmComp->SetRelativeLocation(FVector(0.0f, 0.0f, 400.0f)); // Elevate arm origin above the train
 	SpringArmComp->SetRelativeRotation(FRotator(-20.0f, 0.0f, 0.0f)); // Angle it down
@@ -46,17 +46,17 @@ ATrainPawn::ATrainPawn()
 	SpringArmComp->bUsePawnControlRotation = true; // Rotate arm based on controller
 	SpringArmComp->bDoCollisionTest = false;
 
-	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
+	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("LocoCamera"));
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false; // Camera doesn't rotate relative to arm
 
 	// Rear Coupler
-	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("RearCoupler"));
+	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("LocoRearCoupler"));
 	RearCoupler->SetupAttachment(RootComponent);
 	RearCoupler->SetRelativeLocation(FVector(-500.0f, 0.0f, 0.0f));
 
 	// Rear Coupler Trigger
-	RearCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("RearCouplerTrigger"));
+	RearCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("LocoRearCouplerTrigger"));
 	RearCouplerTrigger->SetupAttachment(RearCoupler);
 	RearCouplerTrigger->SetSphereRadius(50.0f);
 	RearCouplerTrigger->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
