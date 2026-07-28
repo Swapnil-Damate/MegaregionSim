@@ -14,6 +14,7 @@
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
@@ -97,6 +98,12 @@ ATrainPawn::ATrainPawn()
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("LocoCamera"));
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false; // Camera doesn't rotate relative to arm
+
+	// Headlight
+	Headlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Headlight"));
+	Headlight->SetupAttachment(RootComponent);
+	Headlight->SetRelativeLocation(FVector(1000.0f, 0.0f, 150.0f));
+	Headlight->bUseVolumetricScattering = true;
 
 	// Rear Coupler
 	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("LocoRearCoupler"));
@@ -377,6 +384,8 @@ void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 			EnhancedInputComponent->BindAction(SwitchTrainAction, ETriggerEvent::Started, this, &ATrainPawn::SwitchTrainInput);
 		}
 	}
+
+	PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &ATrainPawn::ToggleHeadlight);
 }
 
 void ATrainPawn::SwitchTrainInput(const FInputActionValue& Value)
@@ -452,5 +461,13 @@ void ATrainPawn::LogPhysicsState()
 	FVector Vel = GetVelocity();
 	FString LogLine = FString::Printf(TEXT("[Locomotive] Loc=(%f,%f,%f) Rot=(%f,%f,%f) Vel=(%f,%f,%f)\n"), Loc.X, Loc.Y, Loc.Z, Rot.Pitch, Rot.Yaw, Rot.Roll, Vel.X, Vel.Y, Vel.Z);
 	FFileHelper::SaveStringToFile(LogLine, *PhysicsLogFilePath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+}
+
+void ATrainPawn::ToggleHeadlight()
+{
+	if (Headlight)
+	{
+		Headlight->SetVisibility(!Headlight->IsVisible());
+	}
 }
 

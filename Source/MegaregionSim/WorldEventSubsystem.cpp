@@ -2,6 +2,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine/ExponentialHeightFog.h"
 
 void UWorldEventSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -51,4 +52,27 @@ void UWorldEventSubsystem::TriggerRandomDisaster()
 			}
 		}
 	}
+}
+
+void UWorldEventSubsystem::Tick(float DeltaTime)
+{
+	if (UWorld* World = GetWorld())
+	{
+		// 1. Randomly spawn an AExponentialHeightFog actor to simulate dense mornings
+		if (FMath::RandRange(0, 10000) < 5)
+		{
+			World->SpawnActor<AExponentialHeightFog>(AExponentialHeightFog::StaticClass());
+		}
+
+		// 2. Dummy logic for Niagara particle systems to spawn rain/snow based on simple random chance
+		if (FMath::RandRange(0, 10000) < 10)
+		{
+			// TODO: UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, RainOrSnowSystem, FVector::ZeroVector);
+		}
+	}
+}
+
+TStatId UWorldEventSubsystem::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UWorldEventSubsystem, STATGROUP_Tickables);
 }
