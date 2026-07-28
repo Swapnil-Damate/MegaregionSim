@@ -10,6 +10,10 @@ ASteamLocomotive::ASteamLocomotive()
 	WaterLevel = 100.0f; // Percentage
 	CoalLevel = 100.0f; // Percentage
 	CutoffPercentage = 75.0f; // Reverse gear starting cutoff
+	
+	// Heavy and slow, powerful pull
+	MassInTons = 20.0f;
+	MaxTractiveEffort = 3000000.0f;
 }
 
 void ASteamLocomotive::BeginPlay()

@@ -1,5 +1,6 @@
 #include "MainMenuWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "EconomySubsystem.h"
 
 void UMainMenuWidget::NativeConstruct()
 {
@@ -8,12 +9,18 @@ void UMainMenuWidget::NativeConstruct()
 
 void UMainMenuWidget::StartZenCommute()
 {
-	// Load the map with Zen Commute settings
-	// In a full implementation, we'd pass an options string to the level
+	if (UEconomySubsystem* Economy = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
+	{
+		Economy->AddFunds(10000000); // Infinite money for Zen mode
+	}
 	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("Mode=ZenCommute"));
 }
 
 void UMainMenuWidget::StartGrandLegacy()
 {
+	if (UEconomySubsystem* Economy = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
+	{
+		Economy->AddFunds(5000); // Starting funds for Legacy mode
+	}
 	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("Mode=GrandLegacy"));
 }

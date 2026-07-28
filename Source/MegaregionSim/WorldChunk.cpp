@@ -98,8 +98,8 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 	}
 
 	// --- Procedural Stations ---
-	// Roughly every 10km (StartDist % 10000 == 0), spawn a station if we are in an urban zone
-	if (FMath::Fmod(StartDist, 10000.0f) == 0.0f)
+	// Roughly every 10 miles (StartDist % 1600000 == 0), spawn a station if we are in an urban zone
+	if (FMath::Fmod(StartDist, 1600000.0f) == 0.0f)
 	{
 		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
 		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
@@ -114,5 +114,26 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			StationTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
 			SkyscraperISM->AddInstance(StationTransform);
 		}
+	}
+
+	// --- Overbridges ---
+	// Roughly every 15 miles (StartDist % 2400000 == 0), spawn an intersecting road overbridge
+	if (FMath::Fmod(StartDist, 2400000.0f) == 0.0f && StartDist > 0.0f)
+	{
+		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		
+		// Spawn a basic Overbridge using Skyscraper mesh (Proxy)
+		FTransform BridgeTransform;
+		// Raise it above the tracks
+		Loc.Z += 2000.0f;
+		BridgeTransform.SetLocation(Loc);
+		BridgeTransform.SetScale3D(FVector(5.0f, 0.5f, 0.2f)); // Long across the tracks
+		
+		// Rotate 90 degrees to the track
+		FRotator SplineRot = Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		SplineRot.Yaw += 90.0f;
+		BridgeTransform.SetRotation(SplineRot.Quaternion());
+		
+		SkyscraperISM->AddInstance(BridgeTransform);
 	}
 }

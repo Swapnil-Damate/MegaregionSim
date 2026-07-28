@@ -18,6 +18,7 @@
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
+#include "GameFramework/DefaultPawn.h"
 
 ATrainPawn::ATrainPawn()
 {
@@ -261,7 +262,7 @@ void ATrainPawn::Tick(float DeltaTime)
 			}
 			
 			float SpeedKmh = GetVelocity().Size() * 0.036f; // cm/s to km/h
-			HUDWidgetInstance->UpdateHUDMetrics(SpeedKmh, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch, Wallet, ContractStr);
+			HUDWidgetInstance->UpdateHUDMetrics(SpeedKmh, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch, Wallet, ContractStr, 100.0f, TEXT("None"));
 			TimeSinceLastHUDUpdate = 0.0f;
 		}
 	}
@@ -313,8 +314,17 @@ void ATrainPawn::SwitchTrainInput(const FInputActionValue& Value)
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		PlayerController->UnPossess();
-		// In a full implementation, we'd spawn a ADroneCameraPawn here and possess it.
-		// For now, just logging the intent.
+		// Spawn a Drone Camera Pawn and possess it
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FVector SpawnLoc = GetActorLocation() + FVector(0.0f, 0.0f, 1500.0f);
+		if (AActor* DroneCam = GetWorld()->SpawnActor<AActor>(ADefaultPawn::StaticClass(), SpawnLoc, GetActorRotation(), SpawnParams))
+		{
+			if (APawn* DronePawn = Cast<APawn>(DroneCam))
+			{
+				PlayerController->Possess(DronePawn);
+			}
+		}
 		UE_LOG(LogTemp, Warning, TEXT("Switched to Drone Camera Mode!"));
 	}
 }
