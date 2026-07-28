@@ -27,6 +27,9 @@ protected:
 	UInstancedStaticMeshComponent* SkyscraperISM;
 
 	UPROPERTY()
+	UInstancedStaticMeshComponent* TunnelISM;
+
+	UPROPERTY()
 	UInstancedStaticMeshComponent* TrackMeshISM;
 
 	UPROPERTY()

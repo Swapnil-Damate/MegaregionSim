@@ -27,6 +27,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Economy")
 	FString GetActiveContractDetails();
 
+	UFUNCTION(BlueprintCallable, Category = "Maintenance")
+	void WashTrain(float& TrainDirtiness, int32 Cost);
+
+	UPROPERTY(BlueprintReadWrite, Category = "Legacy Campaign")
+	int32 CurrentReputation = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Legacy Campaign")
+	int32 DepotLevel = 1;
+
 private:
 	FSQLiteDatabase EconomyDB;
 	

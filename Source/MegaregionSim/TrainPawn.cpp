@@ -265,6 +265,16 @@ void ATrainPawn::Tick(float DeltaTime)
 		}
 	}
 
+	// --- Fluid Sloshing Simulation ---
+	if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
+	{
+		FVector AngVel = PrimComp->GetPhysicsAngularVelocityInRadians();
+		// Slosh fluid outward based on Yaw angular velocity
+		float SloshOffset = AngVel.Z * -100.0f; // Adjust multiplier as needed
+		SloshOffset = FMath::Clamp(SloshOffset, -150.0f, 150.0f); // Max 1.5m slosh
+		PrimComp->SetCenterOfMass(FVector(0.0f, SloshOffset, 0.0f));
+	}
+
 	// Update HUD if it exists (Throttled to 10 FPS to prevent Web Browser from hanging the engine)
 	if (HUDWidgetInstance)
 	{

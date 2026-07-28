@@ -4,7 +4,7 @@
 
 ARailwaySignal::ARailwaySignal()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComp"));
 	
@@ -31,6 +31,26 @@ void ARailwaySignal::BeginPlay()
 {
 	Super::BeginPlay();
 	UpdateVisuals();
+}
+
+void ARailwaySignal::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	FVector Start = GetActorLocation();
+	FVector ForwardVector = GetActorForwardVector();
+	FVector End = Start + (ForwardVector * 250000.0f);
+
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, CollisionParams);
+
+	if (bHit && HitResult.GetActor() && HitResult.GetActor()->IsA(ATrainPawn::StaticClass()))
+	{
+		SetSignalState(ESignalState::Stop);
+	}
 }
 
 void ARailwaySignal::OnTrainEnterBlock(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

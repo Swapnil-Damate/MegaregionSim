@@ -98,3 +98,13 @@ FString UEconomySubsystem::GetActiveContractDetails()
 	}
 	return ActiveContract;
 }
+
+void UEconomySubsystem::WashTrain(float& TrainDirtiness, int32 Cost)
+{
+	int32 CurrentBalance = GetPlayerBalance();
+	if (CurrentBalance >= Cost)
+	{
+		AddFunds(-Cost);
+		TrainDirtiness = 0.0f;
+	}
+}

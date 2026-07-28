@@ -23,6 +23,11 @@ AWorldChunk::AWorldChunk()
 	TrackMeshISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrackAsset(TEXT("StaticMesh'/Game/FinalAssets/Tie_Main_1.Tie_Main_1'"));
 	if (TrackAsset.Succeeded()) TrackMeshISM->SetStaticMesh(TrackAsset.Object);
+
+	TunnelISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TunnelISM"));
+	TunnelISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TunnelAsset(TEXT("StaticMesh'/Game/StarterContent/Architecture/Wall_Door_400x300.Wall_Door_400x300'"));
+	if (TunnelAsset.Succeeded()) TunnelISM->SetStaticMesh(TunnelAsset.Object);
 }
 
 void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineComponent* InSpline, float StartDistance, float EndDistance)
@@ -49,23 +54,35 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 			
 			float NoiseScale = 0.00015f;
 			float ZHeight = FMath::PerlinNoise2D(FVector2D(SpawnLoc.X * NoiseScale, SpawnLoc.Y * NoiseScale)) * 12000.0f;
-			SpawnLoc.Z = ZHeight - 200.0f; // Sink into the ground to prevent floating
-
-			FTransform InstanceTransform;
-			InstanceTransform.SetLocation(SpawnLoc);
-			
-			if (Zone == EZoningClassification::Nature || Zone == EZoningClassification::Village)
+			if (ZHeight > 10000.0f)
 			{
-				InstanceTransform.SetScale3D(FVector(FMath::RandRange(0.8f, 1.5f)));
-				InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
-				PineTreeISM->AddInstance(InstanceTransform);
+				// Spawn a Procedural Tunnel mesh on the spline instead of trees
+				FTransform TunnelTransform;
+				TunnelTransform.SetLocation(SplineLoc);
+				TunnelTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World).Quaternion());
+				TunnelTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+				TunnelISM->AddInstance(TunnelTransform);
 			}
-			else if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
+			else
 			{
-				// Buildings scale to random height, keep X/Y uniform. Add some rotation variation.
-				InstanceTransform.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 5.0f)));
-				InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0))); // Snap rotation
-				SkyscraperISM->AddInstance(InstanceTransform);
+				SpawnLoc.Z = ZHeight - 200.0f; // Sink into the ground to prevent floating
+
+				FTransform InstanceTransform;
+				InstanceTransform.SetLocation(SpawnLoc);
+				
+				if (Zone == EZoningClassification::Nature || Zone == EZoningClassification::Village)
+				{
+					InstanceTransform.SetScale3D(FVector(FMath::RandRange(0.8f, 1.5f)));
+					InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
+					PineTreeISM->AddInstance(InstanceTransform);
+				}
+				else if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
+				{
+					// Buildings scale to random height, keep X/Y uniform. Add some rotation variation.
+					InstanceTransform.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 5.0f)));
+					InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0))); // Snap rotation
+					SkyscraperISM->AddInstance(InstanceTransform);
+				}
 			}
 		}
 	}

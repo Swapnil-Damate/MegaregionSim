@@ -1,6 +1,7 @@
 #include "EmergencyDispatcher.h"
 #include "Kismet/GameplayStatics.h"
 #include "RailwaySignal.h"
+#include "GameFramework/DefaultPawn.h"
 
 AEmergencyDispatcher::AEmergencyDispatcher()
 {
@@ -18,7 +19,9 @@ void AEmergencyDispatcher::ReportDerailment(FVector DerailmentLocation)
 	FreezeSignalsToRed(DerailmentLocation, 1000000.0f);
 	
 	// 2. Spawn Emergency Service vehicles (Fire/Ambulance) at nearest road splines
-	// (Placeholder for future vehicle spawning logic)
+	FVector SpawnLocation = DerailmentLocation + FVector(500.0f, 500.0f, 0.0f);
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+	GetWorld()->SpawnActor<ADefaultPawn>(ADefaultPawn::StaticClass(), SpawnLocation, SpawnRotation);
 }
 
 void AEmergencyDispatcher::FreezeSignalsToRed(FVector Location, float Radius)
