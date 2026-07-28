@@ -105,6 +105,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Input")
 	float CurrentThrottleNotch;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Input")
+	float CurrentThrust;
+
 	UFUNCTION(BlueprintCallable, Category = "Train Input")
 	void SetThrottleNotch(float Notch);
 

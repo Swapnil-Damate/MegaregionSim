@@ -125,6 +125,7 @@ ATrainPawn::ATrainPawn()
 	MaxBrakeForce = 25000.0f; // Scaled down brake force
 	
 	CurrentThrottleNotch = 0.0f;
+	CurrentThrust = 0.0f;
 	TimeSinceLastHUDUpdate = 0.0f;
 
 	// Possess automatically for the Visual Test!
@@ -208,8 +209,27 @@ void ATrainPawn::SpawnConsist()
 				MeshComp->SetMassOverrideInKg(NAME_None, 5000.0f, true); // 5 tons each
 			}
 			
-			// In a full implementation, we'd spawn a UPhysicsConstraintComponent to couple them.
-			// For this prototype, spawning them on the track is sufficient to demonstrate the consist.
+			UPhysicsConstraintComponent* Coupler = NewObject<UPhysicsConstraintComponent>(NewCar, UPhysicsConstraintComponent::StaticClass());
+			Coupler->RegisterComponent();
+			Coupler->AttachToComponent(NewCar->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+			Coupler->SetWorldLocation(SpawnLoc + (ForwardVec * 1000.0f));
+
+			UPrimitiveComponent* LastComp = Cast<UPrimitiveComponent>(LastCar->GetRootComponent());
+			UPrimitiveComponent* NewComp = Cast<UPrimitiveComponent>(NewCar->GetRootComponent());
+
+			if (LastComp && NewComp)
+			{
+				Coupler->SetConstrainedComponents(LastComp, NAME_None, NewComp, NAME_None);
+				Coupler->SetLinearXLimit(LCM_Locked, 0.0f);
+				Coupler->SetLinearYLimit(LCM_Locked, 0.0f);
+				Coupler->SetLinearZLimit(LCM_Locked, 0.0f);
+				
+				Coupler->SetAngularSwing1Limit(ACM_Limited, 5.0f);
+				Coupler->SetAngularSwing2Limit(ACM_Limited, 5.0f);
+				Coupler->SetAngularTwistLimit(ACM_Limited, 2.0f);
+			}
+			
+			LastCar = NewCar;
 		}
 	}
 }
@@ -253,15 +273,20 @@ void ATrainPawn::Tick(float DeltaTime)
 		}
 	}
 
-	// --- Basic throttle logic ---
-	if (CurrentThrottleNotch > 0.0f)
+	// --- Tractive Effort Curve ---
+	float TargetThrust = (CurrentThrottleNotch / 8.0f) * MaxTractiveEffort;
+	
+	if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
 	{
-		// Calculate linear force to be applied in the physics solver
-		float AppliedForce = (CurrentThrottleNotch / 8.0f) * MaxTractiveEffort; 
-		if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
+		float Mass = PrimComp->GetMass();
+		// Gradually increase thrust taking into account GetMass()
+		float ThrustInterpRate = (Mass > 0.0f) ? (MaxTractiveEffort / (Mass * 0.1f)) : 10000.0f;
+		CurrentThrust = FMath::FInterpConstantTo(CurrentThrust, TargetThrust, DeltaTime, ThrustInterpRate);
+		
+		if (FMath::Abs(CurrentThrust) > 0.0f)
 		{
 			FVector ForwardVector = GetActorForwardVector();
-			PrimComp->AddForce(ForwardVector * AppliedForce);
+			PrimComp->AddForce(ForwardVector * CurrentThrust);
 		}
 	}
 
