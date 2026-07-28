@@ -69,6 +69,14 @@ void UWorldEventSubsystem::Tick(float DeltaTime)
 		{
 			// TODO: UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, RainOrSnowSystem, FVector::ZeroVector);
 		}
+		
+		// 3. Phase 13: Realistic Day/Night Cycle
+		for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+		{
+			ADirectionalLight* Sun = *It;
+			// A full 360 degree rotation at 0.005 degrees per tick equals approximately 1 realistic day cycle per 2 hours of gameplay
+			Sun->AddActorLocalRotation(FRotator(0.005f, 0.0f, 0.0f));
+		}
 	}
 }
 

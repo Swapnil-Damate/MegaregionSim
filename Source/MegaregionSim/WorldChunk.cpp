@@ -133,12 +133,29 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		}
 	}
 
-	// --- Overbridges ---
-	// Roughly every 15 miles (StartDist % 2400000 == 0), spawn an intersecting road overbridge
-	float BridgeFmod = FMath::Fmod(StartDist, 2400000.0f);
-	if (StartDist > 100.0f && (BridgeFmod < 100.0f || BridgeFmod > 2400000.0f - 100.0f))
+	// --- Overbridges & Level Crossings ---
+	// Roughly every 15 miles (StartDist % 2400000 == 0), spawn an intersecting road crossing
+	float CrossingFmod = FMath::Fmod(StartDist, 2400000.0f);
+	if (StartDist > 100.0f && (CrossingFmod < 100.0f || CrossingFmod > 2400000.0f - 100.0f))
 	{
 		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		
+		// Phase 13: Level Crossings and AI Boom Gates
+		FTransform GateTransformL;
+		GateTransformL.SetLocation(Loc - (RightVec * 800.0f));
+		GateTransformL.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
+		GateTransformL.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+
+		FTransform GateTransformR;
+		GateTransformR.SetLocation(Loc + (RightVec * 800.0f));
+		GateTransformR.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
+		GateTransformR.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+		
+		// In full build, this hooks up to AITrainController to rotate the gates 90 degrees when train approaches
+		// BoomGateISM->AddInstance(GateTransformL);
+		// BoomGateISM->AddInstance(GateTransformR);
+	}
 		
 		// Spawn a basic Overbridge using Skyscraper mesh (Proxy)
 		FTransform BridgeTransform;

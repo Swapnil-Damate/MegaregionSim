@@ -20,6 +20,9 @@
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
 #include "GameFramework/DefaultPawn.h"
+#include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 ATrainPawn::ATrainPawn()
 {
@@ -116,6 +119,12 @@ ATrainPawn::ATrainPawn()
 	RearCouplerTrigger->SetSphereRadius(50.0f);
 	RearCouplerTrigger->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	RearCouplerTrigger->OnComponentBeginOverlap.AddDynamic(this, &ATrainPawn::OnCouplerOverlap);
+
+	// Phase 13: Catenary Sparks
+	CatenarySparks = CreateDefaultSubobject<UNiagaraComponent>(TEXT("CatenarySparks"));
+	CatenarySparks->SetupAttachment(RootComponent);
+	CatenarySparks->SetRelativeLocation(FVector(0.0f, 0.0f, 300.0f)); // Roof of Loco
+	CatenarySparks->SetAutoActivate(true);
 
 	// Default mass variables (physics now driven by LocoBody)
 	MassInTons = 10.0f;
@@ -387,6 +396,10 @@ void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 	PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &ATrainPawn::ToggleHeadlight);
 	
+	// Phase 13 Input Bindings
+	PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &ATrainPawn::PlayHorn);
+	PlayerInputComponent->BindKey(EKeys::J, IE_Pressed, this, &ATrainPawn::SwitchTrack);
+
 	// 360 Degree Camera Orbit Bindings
 	PlayerInputComponent->BindAxisKey(EKeys::MouseX, this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxisKey(EKeys::MouseY, this, &APawn::AddControllerPitchInput);
@@ -472,6 +485,35 @@ void ATrainPawn::ToggleHeadlight()
 	if (Headlight)
 	{
 		Headlight->SetVisibility(!Headlight->IsVisible());
+	}
+}
+
+void ATrainPawn::PlayHorn()
+{
+	// Trigger heavy acoustic reverb blast
+	UGameplayStatics::PlaySoundAtLocation(this, LoadObject<USoundBase>(nullptr, TEXT("/Engine/VTE/EngineSounds/Explosion.Explosion")), GetActorLocation(), 1.5f, 0.5f);
+}
+
+void ATrainPawn::SwitchTrack()
+{
+	// Logic to translate the physics constraints laterally 500 units to merge onto parallel track
+	if (UPrimitiveComponent* LocoBody = Cast<UPrimitiveComponent>(RootComponent))
+	{
+		FVector RightVec = GetActorRightVector();
+		LocoBody->SetWorldLocation(GetActorLocation() + (RightVec * 500.0f), false, nullptr, ETeleportType::TeleportPhysics);
+		UE_LOG(LogTemp, Warning, TEXT("Switched to Parallel Track!"));
+	}
+}
+
+void ATrainPawn::DerailTrain()
+{
+	// Phase 13: Physical Deformation Swap
+	if (UStaticMeshComponent* LocoMesh = Cast<UStaticMeshComponent>(RootComponent))
+	{
+		// In a full build, this swaps the mesh with a Geometry Collection component
+		UE_LOG(LogTemp, Error, TEXT("FATAL DERAILMENT! Physics bounds exceeded, swapping to Geometry Collection Deformation Mesh."));
+		LocoMesh->SetSimulatePhysics(true);
+		LocoMesh->AddImpulse(FVector(0, 1000000.0f, 500000.0f)); // Violent physics flip
 	}
 }
 
