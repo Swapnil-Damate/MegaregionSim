@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/SceneComponent.h"
 
 AInfiniteWorldGenerator::AInfiniteWorldGenerator()
 {

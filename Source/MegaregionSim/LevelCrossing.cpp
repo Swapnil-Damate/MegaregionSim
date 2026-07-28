@@ -1,5 +1,6 @@
 #include "LevelCrossing.h"
 #include "TrainPawn.h"
+#include "Components/SceneComponent.h"
 
 ALevelCrossing::ALevelCrossing()
 {

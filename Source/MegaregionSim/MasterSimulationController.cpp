@@ -5,6 +5,7 @@
 #include "TrackGenerator.h"
 #include "Engine/World.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/SceneComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 AMasterSimulationController::AMasterSimulationController()

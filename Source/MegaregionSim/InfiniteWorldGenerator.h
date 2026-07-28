@@ -37,9 +37,11 @@ public:
 
 private:
 	// Tracks the player to know when to spawn/destroy chunks
+	UPROPERTY()
 	AActor* TrackedPlayer;
 
 	// List of active chunks
+	UPROPERTY()
 	TMap<int32, AWorldChunk*> ActiveChunks;
 	
 	// Track spline progression
