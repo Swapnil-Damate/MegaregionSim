@@ -275,6 +275,21 @@ void ATrainPawn::Tick(float DeltaTime)
 		PrimComp->SetCenterOfMass(FVector(0.0f, SloshOffset, 0.0f));
 	}
 
+	// --- Dynamic Rail Adhesion Constraint ---
+	float CurrentSpeed = GetVelocity().Size() * 0.036f;
+	if (CurrentSpeed > 150.0f)
+	{
+		if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
+		{
+			PrimComp->BodyInstance.bLockYTranslation = false;
+			PrimComp->BodyInstance.bLockXRotation = false;
+			PrimComp->BodyInstance.bLockYRotation = false;
+			PrimComp->BodyInstance.bLockZRotation = false;
+			PrimComp->SetConstraintMode(EDOFMode::SixDOF);
+			PrimComp->AddImpulse(GetActorRightVector() * PrimComp->GetMass() * 10000.0f);
+		}
+	}
+
 	// Update HUD if it exists (Throttled to 10 FPS to prevent Web Browser from hanging the engine)
 	if (HUDWidgetInstance)
 	{

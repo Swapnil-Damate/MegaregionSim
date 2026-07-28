@@ -1,6 +1,7 @@
 #include "AITrainController.h"
 #include "TrainPawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "MegaregionZoningGenerator.h"
 
 AAITrainController::AAITrainController()
 {
@@ -31,6 +32,24 @@ void AAITrainController::Tick(float DeltaTime)
 
 void AAITrainController::ScanForSignals()
 {
+	if (!ControlledTrain) return;
+
+	FVector2D Loc2D(ControlledTrain->GetActorLocation().X, ControlledTrain->GetActorLocation().Y);
+	EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(Loc2D);
+
+	if (Zone == EZoningClassification::UrbanCenter)
+	{
+		TargetSpeedKmh = 40.0f;
+	}
+	else if (Zone == EZoningClassification::Nature)
+	{
+		TargetSpeedKmh = 120.0f;
+	}
+	else
+	{
+		TargetSpeedKmh = 80.0f;
+	}
+
 	ARailwaySignal* NextSignal = GetNextSignalAhead();
 	
 	if (NextSignal)

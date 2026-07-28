@@ -30,5 +30,11 @@ protected:
 	UInstancedStaticMeshComponent* RightRailISM;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	UInstancedStaticMeshComponent* MilepostISM;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
+	UInstancedStaticMeshComponent* CatenaryPoleISM;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
 	UBoxComponent* TrackCollision;
 };
