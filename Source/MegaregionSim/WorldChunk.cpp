@@ -126,7 +126,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			// Spawn a basic Station Platform using Skyscraper mesh (Proxy)
 			FTransform StationTransform;
 			FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
-			StationTransform.SetLocation(Loc - (RightVec * 1500.0f));
+			StationTransform.SetLocation(Loc - (RightVec * 300.0f));
 			StationTransform.SetScale3D(FVector(0.5f, 5.0f, 0.2f)); // Long, flat platform shape
 			StationTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
 			SkyscraperISM->AddInstance(StationTransform);

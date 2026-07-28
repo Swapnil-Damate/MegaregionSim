@@ -16,6 +16,7 @@ class UTrainHUDWidget;
 class UPhysicsConstraintComponent;
 class USphereComponent;
 class UWidgetComponent;
+class USpotLightComponent;
 
 UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrainPawn : public APawn
@@ -50,6 +51,11 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lighting")
+	USpotLightComponent* Headlight;
+
+	void ToggleHeadlight();
 
 	// Enhanced Input
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")

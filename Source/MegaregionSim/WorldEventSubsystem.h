@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Tickable.h"
 #include "WorldEventSubsystem.generated.h"
 
 UENUM(BlueprintType)
@@ -14,12 +15,15 @@ enum class EDisasterType : uint8
 };
 
 UCLASS()
-class MEGAREGIONSIM_API UWorldEventSubsystem : public UGameInstanceSubsystem
+class MEGAREGIONSIM_API UWorldEventSubsystem : public UGameInstanceSubsystem, public FTickableGameObject
 {
 	GENERATED_BODY()
 	
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
+	virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override;
 
 	UFUNCTION(BlueprintCallable, Category = "World Events")
 	void TriggerRandomDisaster();
