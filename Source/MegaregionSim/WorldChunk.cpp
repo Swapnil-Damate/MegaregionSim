@@ -98,7 +98,8 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 
 	// --- Procedural Stations ---
 	// Roughly every 10 miles (StartDist % 1600000 == 0), spawn a station if we are in an urban zone
-	if (FMath::Fmod(StartDist, 1600000.0f) == 0.0f)
+	float StationFmod = FMath::Fmod(StartDist, 1600000.0f);
+	if (StationFmod < 100.0f || StationFmod > 1600000.0f - 100.0f)
 	{
 		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
 		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
@@ -117,7 +118,8 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 
 	// --- Overbridges ---
 	// Roughly every 15 miles (StartDist % 2400000 == 0), spawn an intersecting road overbridge
-	if (FMath::Fmod(StartDist, 2400000.0f) == 0.0f && StartDist > 0.0f)
+	float BridgeFmod = FMath::Fmod(StartDist, 2400000.0f);
+	if (StartDist > 100.0f && (BridgeFmod < 100.0f || BridgeFmod > 2400000.0f - 100.0f))
 	{
 		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
 		

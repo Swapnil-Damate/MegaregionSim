@@ -13,7 +13,7 @@ void UMainMenuWidget::StartZenCommute()
 	{
 		Economy->AddFunds(10000000); // Infinite money for Zen mode
 	}
-	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("Mode=ZenCommute"));
+	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("?Mode=ZenCommute"));
 }
 
 void UMainMenuWidget::StartGrandLegacy()
@@ -22,5 +22,5 @@ void UMainMenuWidget::StartGrandLegacy()
 	{
 		Economy->AddFunds(5000); // Starting funds for Legacy mode
 	}
-	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("Mode=GrandLegacy"));
+	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("?Mode=GrandLegacy"));
 }
