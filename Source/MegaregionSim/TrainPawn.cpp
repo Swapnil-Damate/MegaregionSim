@@ -23,6 +23,7 @@
 #include "NiagaraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "MegaregionZoningGenerator.h"
 
 ATrainPawn::ATrainPawn()
 {
@@ -348,8 +349,25 @@ void ATrainPawn::Tick(float DeltaTime)
 				ContractStr = EconomySystem->GetActiveContractDetails();
 			}
 			
-			float SpeedKmh = GetVelocity().Size() * 0.036f; // cm/s to km/h
-			HUDWidgetInstance->UpdateHUDMetrics(SpeedKmh, BrakePipePressure, BrakeCylinderPressure, CurrentThrottleNotch, Wallet, ContractStr, 100.0f, TEXT("None"));
+			if (HUDWidgetInstance)
+			{
+				bool bHeadlightsOn = Headlight ? Headlight->IsVisible() : false;
+				FString NextSignal = TEXT("GREEN"); 
+				FString UpcomingEvent = TEXT("Clear"); 
+				
+				HUDWidgetInstance->UpdateHUDMetrics(
+					GetVelocity().Size() * 0.036f, 
+					BrakePipePressure, 
+					TargetBrakePipePressure,
+					CurrentThrottleNotch, 
+					Wallet, 
+					ContractStr,
+					100.0f,
+					UpcomingEvent,
+					bHeadlightsOn,
+					NextSignal
+				);
+			}
 			TimeSinceLastHUDUpdate = 0.0f;
 		}
 	}
@@ -367,6 +385,33 @@ void ATrainPawn::Tick(float DeltaTime)
 	if (EraVFXManager)
 	{
 		float EngineLoad = CurrentThrottleNotch / 8.0f;
+		// Check for Over-speed Derailment
+		if (SpeedMetersPerSecond * 3.6f > 150.0f)
+		{
+			DerailTrain();
+		}
+	
+		// Phase 14: Dynamic Track Degradation (Camera Shake)
+		if (CameraComp)
+		{
+			FVector Loc = GetActorLocation();
+			EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
+		
+			// Industrial tracks are old and poorly maintained
+			if (Zone == EZoningClassification::Industrial && SpeedMetersPerSecond > 5.0f)
+			{
+				float ShakeAmount = SpeedMetersPerSecond * 0.2f;
+				float NoiseX = FMath::PerlinNoise1D(GetGameTimeSinceCreation() * 10.0f) * ShakeAmount;
+				float NoiseZ = FMath::PerlinNoise1D(GetGameTimeSinceCreation() * 12.0f + 100.0f) * ShakeAmount;
+				CameraComp->SetRelativeLocation(FVector(0, NoiseX, NoiseZ));
+			}
+			else 
+			{
+				// Smooth ride on all other rails
+				CameraComp->SetRelativeLocation(FVector::ZeroVector);
+			}
+		}
+
 		EraVFXManager->UpdateVFXState(SpeedMetersPerSecond, EngineLoad);
 	}
 }

@@ -67,9 +67,17 @@
 			<span id="contract_text" style="color:#00ff00; font-size:16px;">Waiting for contract...</span>
 		</div>
 	</div>
+	
+	<!-- Phase 14: Dashboard Refit -->
+	<div class="dashboard" style="right: 500px;">
+		<h2>System Status</h2>
+		<div class="metric"><span>Headlights</span> <span class="value" id="headlight_status">[OFF]</span></div>
+		<div class="metric"><span>Next Signal</span> <span class="value" id="next_signal" style="color:red;">[RED]</span></div>
+		<div class="metric" style="border:none;"><span>Track Event</span> <span class="value" id="track_event">Clear</span></div>
+	</div>
 
 	<script>
-		function UpdateTelemetry(speed, pipe, cyl, throttle, wallet, contract) {
+		function UpdateTelemetry(speed, pipe, cyl, throttle, wallet, contract, integrity, track_event, bHeadlight, next_signal) {
 			document.getElementById('speed').innerText = speed;
 			document.getElementById('pipe').innerText = pipe;
 			document.getElementById('cyl').innerText = cyl;
@@ -82,6 +90,21 @@
 			if (contract) {
 				document.getElementById('contract_text').innerText = contract;
 			}
+			
+			if (bHeadlight) {
+				document.getElementById('headlight_status').innerText = "[ON]";
+				document.getElementById('headlight_status').style.color = "#00ff00";
+			} else {
+				document.getElementById('headlight_status').innerText = "[OFF]";
+				document.getElementById('headlight_status').style.color = "#aaaaaa";
+			}
+			
+			document.getElementById('next_signal').innerText = "[" + next_signal + "]";
+			if (next_signal === "GREEN") document.getElementById('next_signal').style.color = "#00ff00";
+			else if (next_signal === "YELLOW") document.getElementById('next_signal').style.color = "#ffff00";
+			else document.getElementById('next_signal').style.color = "#ff0000";
+			
+			document.getElementById('track_event').innerText = track_event;
 		}
 	</script>
 </body>

@@ -20,7 +20,7 @@ public:
 	virtual void NativeConstruct() override;
 
 	// Function to be called every frame to update the numbers on the screen via Javascript
-	void UpdateHUDMetrics(float SpeedKmh, float BrakePipePressure, float BrakeCylinderPressure, float ThrottleNotch, int32 EconomyBalance, const FString& ContractName, float CargoIntegrity = 100.0f, const FString& UpcomingTrackEvent = TEXT("Clear"));
+	void UpdateHUDMetrics(float SpeedKmh, float BrakePipePressure, float BrakeCylinderPressure, float ThrottleNotch, int32 EconomyBalance, const FString& ContractName, float CargoIntegrity = 100.0f, const FString& UpcomingTrackEvent = TEXT("Clear"), bool bHeadlightsOn = false, const FString& NextSignal = TEXT("GREEN"));
 
 	// C++ reference to the owning Train
 	void SetTrainPawn(ATrainPawn* Train);
