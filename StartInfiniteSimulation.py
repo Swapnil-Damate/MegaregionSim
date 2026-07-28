@@ -8,14 +8,13 @@ def start_infinite_sim():
         if actor.get_class().get_name() in ['BP_TrainPawn_C', 'PlayerStart', 'MasterSimulationController', 'TrackGenerator', 'InfiniteWorldGenerator']:
             unreal.EditorLevelLibrary.destroy_actor(actor)
 
-    # 1.5 Spawn the Player Train
-    train_class = unreal.load_class(None, '/Game/Blueprints/BP_TrainPawn.BP_TrainPawn_C')
-    if train_class:
-        # Spawn way above the track so it drops down perfectly
-        player_train = unreal.EditorLevelLibrary.spawn_actor_from_class(train_class, unreal.Vector(0, 0, 1000))
-        unreal.log_warning("SPAWNED: Player Train (BP_TrainPawn) at 0,0,1000")
+    # 1.5 Spawn a PlayerStart high above the track so the GameMode drops the train perfectly
+    player_start_class = unreal.load_class(None, '/Script/Engine.PlayerStart')
+    if player_start_class:
+        player_start = unreal.EditorLevelLibrary.spawn_actor_from_class(player_start_class, unreal.Vector(0, 0, 2000))
+        unreal.log_warning("SPAWNED: PlayerStart at (0, 0, 2000)")
     else:
-        unreal.log_error("Could not find BP_TrainPawn! Please create it manually.")
+        unreal.log_error("Could not spawn PlayerStart!")
 
     # 2. Spawn the Infinite World Generator
     world_gen_class = unreal.load_class(None, '/Script/MegaregionSim.InfiniteWorldGenerator')
