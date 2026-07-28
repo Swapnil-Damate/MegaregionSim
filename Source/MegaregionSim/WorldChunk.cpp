@@ -33,8 +33,7 @@ void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineCom
 
 void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist)
 {
-	// Scatter instances along this 1km spline segment
-	float StepSize = 2500.0f; // Every 25 meters, spawn left/right
+	float StepSize = 2500.0f; // Every 25 meters
 	for (float Dist = StartDist; Dist < EndDist; Dist += StepSize)
 	{
 		FVector SplineLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
@@ -42,30 +41,30 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 		
 		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(SplineLoc.X, SplineLoc.Y));
 		
-		// Spawn left and right of the track
 		for (float Offset = -10000.0f; Offset <= 10000.0f; Offset += 3000.0f)
 		{
-			if (FMath::Abs(Offset) < 1500.0f) continue; // Keep track clear
+			if (FMath::Abs(Offset) < 2500.0f) continue; // Wider clearance for track
 
 			FVector SpawnLoc = SplineLoc + (SplineRight * Offset);
 			
-			// Perlin noise for hills
 			float NoiseScale = 0.00015f;
 			float ZHeight = FMath::PerlinNoise2D(FVector2D(SpawnLoc.X * NoiseScale, SpawnLoc.Y * NoiseScale)) * 12000.0f;
-			SpawnLoc.Z = ZHeight;
+			SpawnLoc.Z = ZHeight - 200.0f; // Sink into the ground to prevent floating
 
 			FTransform InstanceTransform;
 			InstanceTransform.SetLocation(SpawnLoc);
-			InstanceTransform.SetScale3D(FVector(FMath::RandRange(0.8f, 1.5f)));
-			InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
-
+			
 			if (Zone == EZoningClassification::Nature || Zone == EZoningClassification::Village)
 			{
+				InstanceTransform.SetScale3D(FVector(FMath::RandRange(0.8f, 1.5f)));
+				InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
 				PineTreeISM->AddInstance(InstanceTransform);
 			}
 			else if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
 			{
-				// Buildings should probably spawn on flatter terrain or use different alignment, but this works for prototype
+				// Buildings scale to random height, keep X/Y uniform. Add some rotation variation.
+				InstanceTransform.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 5.0f)));
+				InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0))); // Snap rotation
 				SkyscraperISM->AddInstance(InstanceTransform);
 			}
 		}

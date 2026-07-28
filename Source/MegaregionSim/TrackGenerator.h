@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "TrackGenerator.generated.h"
 
 class UBoxComponent;
@@ -14,23 +15,20 @@ class MEGAREGIONSIM_API ATrackGenerator : public AActor
 public:	
 	ATrackGenerator();
 
+	virtual void BeginPlay() override;
+
+	void GenerateTrack();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
-	UBoxComponent* LeftRail;
+	UInstancedStaticMeshComponent* CrossTiesISM;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
-	UBoxComponent* RightRail;
+	UInstancedStaticMeshComponent* LeftRailISM;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
-	UBoxComponent* CrossTies;
+	UInstancedStaticMeshComponent* RightRailISM;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
-	class UStaticMeshComponent* BaseMesh;
-
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
-	class UStaticMeshComponent* LeftRailMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rails")
-	class UStaticMeshComponent* RightRailMesh;
+	UBoxComponent* TrackCollision;
 };

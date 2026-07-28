@@ -43,16 +43,37 @@ ATrainPawn::ATrainPawn()
 	LocoBody->BodyInstance.bLockYRotation = true;
 	LocoBody->BodyInstance.bLockZRotation = true;
 
-	// Visual Mesh (Final AAA Asset)
-	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LocoVisualMesh"));
-	VisualMesh->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("StaticMesh'/Game/FinalAssets/Body_LongHood.Body_LongHood'"));
-	if (MeshAsset.Succeeded())
+	// Cabin Mesh
+	UStaticMeshComponent* CabinMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CabinMesh"));
+	CabinMesh->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CabinAsset(TEXT("StaticMesh'/Game/FinalAssets/Body_Cabin.Body_Cabin'"));
+	if (CabinAsset.Succeeded())
 	{
-		VisualMesh->SetStaticMesh(MeshAsset.Object);
-		// Note: The FBX scale should inherently be correct now, so reset the massive proxy scale to 1.0f
-		VisualMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f)); 
-		VisualMesh->SetCollisionProfileName(TEXT("NoCollision")); // Critical: Prevent complex compound shape snagging
+		CabinMesh->SetStaticMesh(CabinAsset.Object);
+		CabinMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
+		CabinMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	}
+
+	// Hood Mesh
+	UStaticMeshComponent* HoodMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HoodMesh"));
+	HoodMesh->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> HoodAsset(TEXT("StaticMesh'/Game/FinalAssets/Body_LongHood.Body_LongHood'"));
+	if (HoodAsset.Succeeded())
+	{
+		HoodMesh->SetStaticMesh(HoodAsset.Object);
+		HoodMesh->SetRelativeLocation(FVector(500.0f, 0.0f, 50.0f));
+		HoodMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	}
+
+	// Wheel Mesh 1
+	UStaticMeshComponent* WheelMesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WheelMesh1"));
+	WheelMesh1->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> WheelAsset(TEXT("StaticMesh'/Game/FinalAssets/Wheel_Drive_L_1.Wheel_Drive_L_1'"));
+	if (WheelAsset.Succeeded())
+	{
+		WheelMesh1->SetStaticMesh(WheelAsset.Object);
+		WheelMesh1->SetRelativeLocation(FVector(200.0f, -80.0f, -100.0f));
+		WheelMesh1->SetCollisionProfileName(TEXT("NoCollision"));
 	}
 
 	// Setup UI Component

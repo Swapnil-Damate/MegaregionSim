@@ -1,55 +1,60 @@
 #include "TrackGenerator.h"
 #include "Components/BoxComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 ATrackGenerator::ATrackGenerator()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// Load the final AAA Track Mesh FBX for visuals
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrackMeshAsset(TEXT("StaticMesh'/Game/FinalAssets/Tie_Main_1.Tie_Main_1'"));
-	UStaticMesh* TrackMesh = TrackMeshAsset.Object;
+	TrackCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackCollision"));
+	RootComponent = TrackCollision;
+	TrackCollision->SetBoxExtent(FVector(250000.0f, 200.0f, 20.0f)); 
+	TrackCollision->SetCollisionProfileName(TEXT("BlockAll"));
 
-	// The base platform (Ties/Ballast) - 5 Kilometers long!
-	CrossTies = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackCrossTies"));
-	RootComponent = CrossTies;
-	
-	// Box extent is half-size. 250,000 units = 2.5km. Total length = 5km.
-	// Width = 200 units (2 meters). Thickness = 20 units.
-	CrossTies->SetBoxExtent(FVector(250000.0f, 200.0f, 20.0f)); 
-	CrossTies->SetCollisionProfileName(TEXT("BlockAll"));
+	CrossTiesISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("CrossTiesISM"));
+	CrossTiesISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TieAsset(TEXT("StaticMesh'/Game/FinalAssets/Tie_Main_1.Tie_Main_1'"));
+	if (TieAsset.Succeeded()) CrossTiesISM->SetStaticMesh(TieAsset.Object);
 
-	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackBaseMesh"));
-	BaseMesh->SetupAttachment(CrossTies);
-	if (TrackMesh) BaseMesh->SetStaticMesh(TrackMesh);
-	// Reset the 5000x proxy scale since the FBX will be correctly sized by PCG later, or we scale the FBX natively.
-	// For now, we will leave the relative scale at 1.0, 1.0, 1.0 (assuming the FBX is a 5km long mesh, or we rely on spline meshes in Phase 5)
-	BaseMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f)); 
-	BaseMesh->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics interference
+	LeftRailISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeftRailISM"));
+	LeftRailISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> LeftRailAsset(TEXT("StaticMesh'/Game/FinalAssets/Rail_Main_L.Rail_Main_L'"));
+	if (LeftRailAsset.Succeeded()) LeftRailISM->SetStaticMesh(LeftRailAsset.Object);
 
-	// Left Rail
-	LeftRail = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackLeftRail"));
-	LeftRail->SetupAttachment(RootComponent);
-	LeftRail->SetBoxExtent(FVector(250000.0f, 10.0f, 15.0f));
-	// Standard gauge is ~143.5 cm. Place rail 71.75 cm to the left.
-	LeftRail->SetRelativeLocation(FVector(0.0f, -71.75f, 35.0f));
-	LeftRail->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics glitches from flat boxes resting on thin edges
+	RightRailISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("RightRailISM"));
+	RightRailISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> RightRailAsset(TEXT("StaticMesh'/Game/FinalAssets/Rail_Main_R.Rail_Main_R'"));
+	if (RightRailAsset.Succeeded()) RightRailISM->SetStaticMesh(RightRailAsset.Object);
+}
 
-	LeftRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackLeftRailMesh"));
-	LeftRailMesh->SetupAttachment(LeftRail);
-	// We no longer need separate visual rails because the FBX includes them!
-	LeftRailMesh->SetCollisionProfileName(TEXT("NoCollision"));
+void ATrackGenerator::BeginPlay()
+{
+	Super::BeginPlay();
+	GenerateTrack();
+}
 
-	// Right Rail
-	RightRail = CreateDefaultSubobject<UBoxComponent>(TEXT("TrackRightRail"));
-	RightRail->SetupAttachment(RootComponent);
-	RightRail->SetBoxExtent(FVector(250000.0f, 10.0f, 15.0f));
-	RightRail->SetRelativeLocation(FVector(0.0f, 71.75f, 35.0f));
-	RightRail->SetCollisionProfileName(TEXT("NoCollision")); // Prevent physics glitches from flat boxes resting on thin edges
+void ATrackGenerator::GenerateTrack()
+{
+	float TrackLength = 500000.0f;
+	float TieSpacing = 100.0f; 
+	float RailSpacing = 1000.0f; // Arbitrary length for rail piece
 
-	RightRailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrackRightRailMesh"));
-	RightRailMesh->SetupAttachment(RightRail);
-	// We no longer need separate visual rails because the FBX includes them!
-	RightRailMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	for (float x = -250000.0f; x < 250000.0f; x += TieSpacing)
+	{
+		FTransform TieTransform;
+		TieTransform.SetLocation(FVector(x, 0.0f, 10.0f));
+		CrossTiesISM->AddInstance(TieTransform);
+	}
+
+	for (float x = -250000.0f; x < 250000.0f; x += RailSpacing)
+	{
+		FTransform RailTransformL;
+		RailTransformL.SetLocation(FVector(x, -71.75f, 25.0f));
+		LeftRailISM->AddInstance(RailTransformL);
+
+		FTransform RailTransformR;
+		RailTransformR.SetLocation(FVector(x, 71.75f, 25.0f));
+		RightRailISM->AddInstance(RailTransformR);
+	}
 }
