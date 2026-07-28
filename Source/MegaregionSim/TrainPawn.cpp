@@ -92,7 +92,7 @@ ATrainPawn::ATrainPawn()
 	SpringArmComp->SetRelativeLocation(FVector(0.0f, 0.0f, 800.0f)); // Elevate arm origin above the train
 	SpringArmComp->SetRelativeRotation(FRotator(-30.0f, 45.0f, 0.0f)); // Angle it down and to the side for a cinematic view!
 	SpringArmComp->TargetArmLength = 3500.0f; // Distance to camera (far enough to see 20m train and roadblock)
-	SpringArmComp->bUsePawnControlRotation = false; // Keep camera fixed at this cinematic angle
+	SpringArmComp->bUsePawnControlRotation = true; // Enabled for 360 Degree Orbit!
 	SpringArmComp->bDoCollisionTest = false;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("LocoCamera"));
@@ -386,6 +386,10 @@ void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	}
 
 	PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &ATrainPawn::ToggleHeadlight);
+	
+	// 360 Degree Camera Orbit Bindings
+	PlayerInputComponent->BindAxisKey(EKeys::MouseX, this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxisKey(EKeys::MouseY, this, &APawn::AddControllerPitchInput);
 }
 
 void ATrainPawn::SwitchTrainInput(const FInputActionValue& Value)
