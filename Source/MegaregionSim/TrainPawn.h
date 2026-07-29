@@ -17,6 +17,7 @@ class UPhysicsConstraintComponent;
 class USphereComponent;
 class UWidgetComponent;
 class USpotLightComponent;
+class UNiagaraComponent;
 
 UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrainPawn : public APawn
@@ -154,5 +155,5 @@ public:
 	void DerailTrain();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX")
-	class UNiagaraComponent* CatenarySparks;
+	UNiagaraComponent* CatenarySparks;
 };
