@@ -305,6 +305,31 @@ void ATrainPawn::Tick(float DeltaTime)
 			FVector ForwardVector = GetActorForwardVector();
 			PrimComp->AddForce(ForwardVector * CurrentThrust);
 		}
+		
+		// --- Physical Braking Simulation ---
+		float BrakeRatio = BrakeCylinderPressure / 64.0f;
+		if (BrakeRatio > 0.01f)
+		{
+			FVector Velocity = GetVelocity();
+			float Speed = Velocity.Size();
+			
+			// Full Stop Velocity Clamp (Prevents sliding backward from brakes)
+			if (Speed < 5.0f)
+			{
+				PrimComp->SetPhysicsLinearVelocity(FVector::ZeroVector);
+			}
+			else
+			{
+				FVector BrakeDirection = -Velocity.GetSafeNormal();
+				float TargetBrake = BrakeRatio * MaxBrakeForce;
+				
+				// Smooth interpolation to prevent Space Launch bug
+				static float CurrentBrake = 0.0f;
+				CurrentBrake = FMath::FInterpTo(CurrentBrake, TargetBrake, DeltaTime, 5.0f);
+				
+				PrimComp->AddForce(BrakeDirection * CurrentBrake);
+			}
+		}
 	}
 
 	// --- Fluid Sloshing Simulation ---
