@@ -47,25 +47,13 @@ void ATrackGenerator::BeginPlay()
 void ATrackGenerator::GenerateTrack()
 {
 	float TrackLength = 500000.0f;
-	float TieSpacing = 100.0f; 
-	float RailSpacing = 1000.0f; // Arbitrary length for rail piece
+	float TrackSegmentLength = 2000.0f; // Assume the user's Track_Mesh is 20 meters long
 
-	for (float x = -250000.0f; x < 250000.0f; x += TieSpacing)
+	for (float x = -250000.0f; x < 250000.0f; x += TrackSegmentLength)
 	{
-		FTransform TieTransform;
-		TieTransform.SetLocation(FVector(x, 0.0f, 10.0f));
-		CrossTiesISM->AddInstance(TieTransform);
-	}
-
-	for (float x = -250000.0f; x < 250000.0f; x += RailSpacing)
-	{
-		FTransform RailTransformL;
-		RailTransformL.SetLocation(FVector(x, -71.75f, 25.0f));
-		LeftRailISM->AddInstance(RailTransformL);
-
-		FTransform RailTransformR;
-		RailTransformR.SetLocation(FVector(x, 71.75f, 25.0f));
-		RightRailISM->AddInstance(RailTransformR);
+		FTransform TrackTransform;
+		TrackTransform.SetLocation(FVector(x, 0.0f, 10.0f));
+		CrossTiesISM->AddInstance(TrackTransform);
 	}
 
 	float MilepostSpacing = 1600000.0f;
