@@ -1,7 +1,7 @@
 #include "Misc/AutomationTest.h"
 #include "Math/UnrealMathUtility.h"
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMegaregionDummyTest, "Megaregion.DummyTest", EAutomationTestFlags::SmokeFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMegaregionDummyTest, "Megaregion.DummyTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::SmokeFilter)
 
 bool FMegaregionDummyTest::RunTest(const FString& Parameters)
 {
@@ -9,7 +9,7 @@ bool FMegaregionDummyTest::RunTest(const FString& Parameters)
     return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMegaregionDerailmentMatrixTest, "Megaregion.DerailmentMatrixTest", EAutomationTestFlags::EngineFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMegaregionDerailmentMatrixTest, "Megaregion.DerailmentMatrixTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FMegaregionDerailmentMatrixTest::RunTest(const FString& Parameters)
 {
