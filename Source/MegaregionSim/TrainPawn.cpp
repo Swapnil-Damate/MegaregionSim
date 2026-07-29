@@ -107,7 +107,7 @@ ATrainPawn::ATrainPawn()
 	Headlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Headlight"));
 	Headlight->SetupAttachment(RootComponent);
 	Headlight->SetRelativeLocation(FVector(1000.0f, 0.0f, 150.0f));
-	Headlight->bUseVolumetricScattering = true;
+	Headlight->VolumetricScatteringIntensity = 1.0f;
 	Headlight->bUseTemperature = true; // Phase 14: Use Color Temp
 	Headlight->Temperature = 4000.0f; // Warm White
 
@@ -527,7 +527,7 @@ void ATrainPawn::BrakeInput(const FInputActionValue& Value)
 {
 	float BrakeValue = Value.Get<float>();
 	// E.g., positive input reduces target pressure (applies brakes)
-	SetTargetBrakePipePressure(TargetBrakePipePressure - (BrakeValue * 2.0f));
+	SetTargetBrakePressure(TargetBrakePipePressure - (BrakeValue * 2.0f));
 }
 
 // --- Phase 14: Multiplayer Co-Op Network Replication ---

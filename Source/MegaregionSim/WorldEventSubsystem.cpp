@@ -3,6 +3,8 @@
 #include "Engine/World.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/ExponentialHeightFog.h"
+#include "Engine/DirectionalLight.h"
+#include "EngineUtils.h"
 
 void UWorldEventSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
