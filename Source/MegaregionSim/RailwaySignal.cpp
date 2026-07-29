@@ -11,7 +11,7 @@ ARailwaySignal::ARailwaySignal()
 	SignalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SignalMesh"));
 	SignalMesh->SetupAttachment(RootComponent);
 	
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Signal_Head.Signal_Head'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Modern_LED_Signal.Modern_LED_Signal'"));
 	if (SignalAsset.Succeeded()) SignalMesh->SetStaticMesh(SignalAsset.Object);
 
 	// The block trigger represents the track section this signal protects (e.g. 5km long)

@@ -14,22 +14,12 @@ ATrackGenerator::ATrackGenerator()
 
 	CrossTiesISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("CrossTiesISM"));
 	CrossTiesISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> TieAsset(TEXT("StaticMesh'/Game/FinalAssets/Tie_Main_1.Tie_Main_1'"));
-	if (TieAsset.Succeeded()) CrossTiesISM->SetStaticMesh(TieAsset.Object);
-
-	LeftRailISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("LeftRailISM"));
-	LeftRailISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> LeftRailAsset(TEXT("StaticMesh'/Game/FinalAssets/Rail_Main_L.Rail_Main_L'"));
-	if (LeftRailAsset.Succeeded()) LeftRailISM->SetStaticMesh(LeftRailAsset.Object);
-
-	RightRailISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("RightRailISM"));
-	RightRailISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> RightRailAsset(TEXT("StaticMesh'/Game/FinalAssets/Rail_Main_R.Rail_Main_R'"));
-	if (RightRailAsset.Succeeded()) RightRailISM->SetStaticMesh(RightRailAsset.Object);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrackAsset(TEXT("StaticMesh'/Game/FinalAssets/Track_Mesh.Track_Mesh'"));
+	if (TrackAsset.Succeeded()) CrossTiesISM->SetStaticMesh(TrackAsset.Object);
 
 	MilepostISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("MilepostISM"));
 	MilepostISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> MilepostAsset(TEXT("StaticMesh'/Game/FinalAssets/Milepost.Milepost'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> MilepostAsset(TEXT("StaticMesh'/Game/FinalAssets/Milepost_Marker.Milepost_Marker'"));
 	if (MilepostAsset.Succeeded()) MilepostISM->SetStaticMesh(MilepostAsset.Object);
 
 	CatenaryPoleISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("CatenaryPoleISM"));
