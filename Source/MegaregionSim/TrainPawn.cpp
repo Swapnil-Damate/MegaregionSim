@@ -41,12 +41,14 @@ ATrainPawn::ATrainPawn()
 	LocoBody->SetSimulatePhysics(true);
 	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f, true); // 10 tons (Scaled down to prevent Chaos float precision errors)
 	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
+	LocoBody->SetLinearDamping(0.01f);
+	LocoBody->SetAngularDamping(0.01f);
 
-	// Lock Physics to 1D rail movement to prevent derailment
-	LocoBody->BodyInstance.bLockYTranslation = true;
-	LocoBody->BodyInstance.bLockXRotation = true;
-	LocoBody->BodyInstance.bLockYRotation = true;
-	LocoBody->BodyInstance.bLockZRotation = true;
+	// Unlock physical axes so the train isn't frozen in world space
+	LocoBody->BodyInstance.bLockYTranslation = false;
+	LocoBody->BodyInstance.bLockXRotation = false;
+	LocoBody->BodyInstance.bLockYRotation = false;
+	LocoBody->BodyInstance.bLockZRotation = false;
 
 	// Train Mesh
 	UStaticMeshComponent* TrainMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrainMesh"));
