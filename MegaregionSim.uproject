@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{83E767BB-467F-1D6F-E625-D7936CC4EADB}",
+	"EngineAssociation": "5.8",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -34,7 +34,6 @@
 			"Name": "EditorScriptingUtilities",
 			"Enabled": true
 		},
-
 		{
 			"Name": "SQLiteCore",
 			"Enabled": true
