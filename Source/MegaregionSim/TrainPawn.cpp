@@ -48,37 +48,15 @@ ATrainPawn::ATrainPawn()
 	LocoBody->BodyInstance.bLockYRotation = true;
 	LocoBody->BodyInstance.bLockZRotation = true;
 
-	// Cabin Mesh
-	UStaticMeshComponent* CabinMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CabinMesh"));
-	CabinMesh->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CabinAsset(TEXT("StaticMesh'/Game/FinalAssets/Body_Cabin.Body_Cabin'"));
-	if (CabinAsset.Succeeded())
+	// Train Mesh
+	UStaticMeshComponent* TrainMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrainMesh"));
+	TrainMesh->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrainAsset(TEXT("StaticMesh'/Game/FinalAssets/Diesel_Locomotive.Diesel_Locomotive'"));
+	if (TrainAsset.Succeeded())
 	{
-		CabinMesh->SetStaticMesh(CabinAsset.Object);
-		CabinMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
-		CabinMesh->SetCollisionProfileName(TEXT("NoCollision"));
-	}
-
-	// Hood Mesh
-	UStaticMeshComponent* HoodMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HoodMesh"));
-	HoodMesh->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> HoodAsset(TEXT("StaticMesh'/Game/FinalAssets/Body_LongHood.Body_LongHood'"));
-	if (HoodAsset.Succeeded())
-	{
-		HoodMesh->SetStaticMesh(HoodAsset.Object);
-		HoodMesh->SetRelativeLocation(FVector(500.0f, 0.0f, 50.0f));
-		HoodMesh->SetCollisionProfileName(TEXT("NoCollision"));
-	}
-
-	// Wheel Mesh 1
-	UStaticMeshComponent* WheelMesh1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WheelMesh1"));
-	WheelMesh1->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> WheelAsset(TEXT("StaticMesh'/Game/FinalAssets/Wheel_Drive_L_1.Wheel_Drive_L_1'"));
-	if (WheelAsset.Succeeded())
-	{
-		WheelMesh1->SetStaticMesh(WheelAsset.Object);
-		WheelMesh1->SetRelativeLocation(FVector(200.0f, -80.0f, -100.0f));
-		WheelMesh1->SetCollisionProfileName(TEXT("NoCollision"));
+		TrainMesh->SetStaticMesh(TrainAsset.Object);
+		TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+		TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
 
 	// Setup UI Component
