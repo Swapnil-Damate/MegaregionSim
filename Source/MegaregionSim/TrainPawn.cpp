@@ -398,7 +398,7 @@ void ATrainPawn::Tick(float DeltaTime)
 			EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
 		
 			// Industrial tracks are old and poorly maintained
-			if (Zone == EZoningClassification::Industrial && SpeedMetersPerSecond > 5.0f)
+			if (Zone == EZoningClassification::HeavyIndustrial && SpeedMetersPerSecond > 5.0f)
 			{
 				float ShakeAmount = SpeedMetersPerSecond * 0.2f;
 				float NoiseX = FMath::PerlinNoise1D(GetGameTimeSinceCreation() * 10.0f) * ShakeAmount;

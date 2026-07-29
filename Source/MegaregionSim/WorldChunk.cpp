@@ -155,7 +155,6 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		// In full build, this hooks up to AITrainController to rotate the gates 90 degrees when train approaches
 		// BoomGateISM->AddInstance(GateTransformL);
 		// BoomGateISM->AddInstance(GateTransformR);
-	}
 		
 		// Spawn a basic Overbridge using Skyscraper mesh (Proxy)
 		FTransform BridgeTransform;
