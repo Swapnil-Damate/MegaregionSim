@@ -12,9 +12,13 @@ class MEGAREGIONSIM_API UMainMenuWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Game Modes")
+	UFUNCTION(BlueprintCallable, Category = "MainMenu")
 	void StartZenCommute();
 
-	UFUNCTION(BlueprintCallable, Category = "Game Modes")
+	UFUNCTION(BlueprintCallable, Category = "MainMenu")
 	void StartGrandLegacy();
+
+	// Phase 14: Masterclass Engine Mode
+	UFUNCTION(BlueprintCallable, Category = "MainMenu")
+	void StartMasterclassEngine();
 };

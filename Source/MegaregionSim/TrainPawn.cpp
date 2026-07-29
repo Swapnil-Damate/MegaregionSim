@@ -108,6 +108,8 @@ ATrainPawn::ATrainPawn()
 	Headlight->SetupAttachment(RootComponent);
 	Headlight->SetRelativeLocation(FVector(1000.0f, 0.0f, 150.0f));
 	Headlight->bUseVolumetricScattering = true;
+	Headlight->bUseTemperature = true; // Phase 14: Use Color Temp
+	Headlight->Temperature = 4000.0f; // Warm White
 
 	// Rear Coupler
 	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("LocoRearCoupler"));
@@ -380,6 +382,25 @@ void ATrainPawn::Tick(float DeltaTime)
 				FString NextSignal = TEXT("GREEN"); 
 				FString UpcomingEvent = TEXT("Clear"); 
 				
+				// Phase 14: Dynamic Signals (Raycast proxy)
+				FHitResult HitResult;
+				FVector Start = GetActorLocation();
+				FVector End = Start + (GetActorForwardVector() * 20000.0f); // 200m ahead
+				FCollisionQueryParams Params;
+				Params.AddIgnoredActor(this);
+				
+				if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
+				{
+					if (HitResult.GetActor() && HitResult.GetActor()->GetName().Contains("Signal"))
+					{
+						NextSignal = TEXT("RED"); // Basic proxy
+					}
+					else if (HitResult.GetActor() && HitResult.GetActor()->GetName().Contains("Crossing"))
+					{
+						UpcomingEvent = TEXT("Crossing Ahead!");
+					}
+				}
+				
 				HUDWidgetInstance->UpdateHUDMetrics(
 					GetVelocity().Size() * 0.036f, 
 					BrakePipePressure, 
@@ -506,18 +527,44 @@ void ATrainPawn::BrakeInput(const FInputActionValue& Value)
 {
 	float BrakeValue = Value.Get<float>();
 	// E.g., positive input reduces target pressure (applies brakes)
-	SetTargetBrakePressure(TargetBrakePipePressure - (BrakeValue * 2.0f));
+	SetTargetBrakePipePressure(TargetBrakePipePressure - (BrakeValue * 2.0f));
 }
 
-void ATrainPawn::SetThrottleNotch(float Notch)
+// --- Phase 14: Multiplayer Co-Op Network Replication ---
+void ATrainPawn::SetThrottleNotch(float NewNotch)
 {
-	// Locomotives typically have 8 throttle notches
-	CurrentThrottleNotch = FMath::Clamp(Notch, 0.0f, 8.0f);
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		Server_SetThrottleNotch(NewNotch);
+	}
+	CurrentThrottleNotch = FMath::Clamp(NewNotch, 0.0f, 8.0f);
 }
 
-void ATrainPawn::SetTargetBrakePressure(float TargetPressure)
+void ATrainPawn::Server_SetThrottleNotch_Implementation(float NewNotch)
 {
-	TargetBrakePipePressure = FMath::Clamp(TargetPressure, 0.0f, 90.0f);
+	SetThrottleNotch(NewNotch);
+}
+bool ATrainPawn::Server_SetThrottleNotch_Validate(float NewNotch)
+{
+	return true;
+}
+
+void ATrainPawn::SetTargetBrakePressure(float NewPressure)
+{
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		Server_SetTargetBrakePressure(NewPressure);
+	}
+	TargetBrakePipePressure = FMath::Clamp(NewPressure, 0.0f, 90.0f);
+}
+
+void ATrainPawn::Server_SetTargetBrakePressure_Implementation(float NewPressure)
+{
+	SetTargetBrakePressure(NewPressure);
+}
+bool ATrainPawn::Server_SetTargetBrakePressure_Validate(float NewPressure)
+{
+	return true;
 }
 
 void ATrainPawn::OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -566,13 +613,33 @@ void ATrainPawn::PlayHorn()
 
 void ATrainPawn::SwitchTrack()
 {
-	// Logic to translate the physics constraints laterally 500 units to merge onto parallel track
-	if (UPrimitiveComponent* LocoBody = Cast<UPrimitiveComponent>(RootComponent))
+	if (GetLocalRole() < ROLE_Authority)
 	{
-		FVector RightVec = GetActorRightVector();
-		LocoBody->SetWorldLocation(GetActorLocation() + (RightVec * 500.0f), false, nullptr, ETeleportType::TeleportPhysics);
+		Server_SwitchTrack();
+		return;
+	}
+
+	FVector ForwardVec = GetActorForwardVector();
+	FVector RightVec = GetActorRightVector();
+	FVector CurrentLoc = GetActorLocation();
+
+	CurrentLoc += (RightVec * 500.0f); 
+
+	SetActorLocation(CurrentLoc, false, nullptr, ETeleportType::TeleportPhysics);
+
+	if (HUDWidgetInstance)
+	{
 		UE_LOG(LogTemp, Warning, TEXT("Switched to Parallel Track!"));
 	}
+}
+
+void ATrainPawn::Server_SwitchTrack_Implementation()
+{
+	SwitchTrack();
+}
+bool ATrainPawn::Server_SwitchTrack_Validate()
+{
+	return true;
 }
 
 void ATrainPawn::DerailTrain()

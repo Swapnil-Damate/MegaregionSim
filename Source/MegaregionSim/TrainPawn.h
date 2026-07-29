@@ -116,9 +116,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Train Input")
 	void SetThrottleNotch(float Notch);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetThrottleNotch(float Notch);
 
 	UFUNCTION(BlueprintCallable, Category = "Train Input")
 	void SetTargetBrakePressure(float TargetPressure);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetTargetBrakePressure(float TargetPressure);
 
 	void SpawnConsist();
 
@@ -145,6 +149,8 @@ public:
 	// Phase 13 Features
 	void PlayHorn();
 	void SwitchTrack();
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SwitchTrack();
 	void DerailTrain();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX")

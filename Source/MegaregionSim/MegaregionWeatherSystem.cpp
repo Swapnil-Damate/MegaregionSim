@@ -1,12 +1,14 @@
 #include "MegaregionWeatherSystem.h"
 #include "Engine/DirectionalLight.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "NiagaraFunctionLibrary.h"
 
 AMegaregionWeatherSystem::AMegaregionWeatherSystem()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentWeather = EWeatherState::Clear;
-	TimeScale = 0.0f; // Disabled dynamic time to prevent Lumen exposure clipping
+	TimeScale = 0.005f; // Re-enabled dynamic time of day!
 	SunLight = nullptr;
 }
 
@@ -40,18 +42,18 @@ void AMegaregionWeatherSystem::SetWeatherState(EWeatherState NewState)
 	{
 	case EWeatherState::Clear:
 		UE_LOG(LogTemp, Log, TEXT("Weather System: Clear. Friction Normal."));
-		// Set Friction = 1.0f
 		break;
 	case EWeatherState::Rain:
 		UE_LOG(LogTemp, Warning, TEXT("Weather System: Rain! Wheel Slip chance increased."));
-		// Set Friction = 0.6f
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/FinalAssets/VFX_Rain.VFX_Rain")), FVector::ZeroVector);
 		break;
 	case EWeatherState::Snow:
 		UE_LOG(LogTemp, Error, TEXT("Weather System: Snow! Severe Traction loss."));
-		// Set Friction = 0.3f
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), LoadObject<UNiagaraSystem>(nullptr, TEXT("/Game/FinalAssets/VFX_Snow.VFX_Snow")), FVector::ZeroVector);
 		break;
 	case EWeatherState::HeavyFog:
 		UE_LOG(LogTemp, Log, TEXT("Weather System: Heavy Fog. Speed reduction recommended."));
+		GetWorld()->SpawnActor<AExponentialHeightFog>(AExponentialHeightFog::StaticClass());
 		break;
 	}
 }

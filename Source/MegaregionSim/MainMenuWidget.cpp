@@ -24,3 +24,12 @@ void UMainMenuWidget::StartGrandLegacy()
 	}
 	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("?Mode=GrandLegacy"));
 }
+
+void UMainMenuWidget::StartMasterclassEngine()
+{
+	if (UEconomySubsystem* Economy = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
+	{
+		Economy->AddFunds(0); // Hardcore: 0 starting funds
+	}
+	UGameplayStatics::OpenLevel(this, FName("L_MegaregionMaster"), true, TEXT("?Mode=MasterclassEngine"));
+}

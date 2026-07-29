@@ -14,8 +14,8 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION(BlueprintCallable, Category = "AI")
-	void SpawnPassengersAtStation(FVector StationLocation);
+	UFUNCTION(BlueprintCallable, Category = "AI|Passengers")
+	void SpawnPassengersAtStation(FVector StationLocation, int32 StationDensityMultiplier = 1);
 
 protected:
 	virtual void BeginPlay() override;
