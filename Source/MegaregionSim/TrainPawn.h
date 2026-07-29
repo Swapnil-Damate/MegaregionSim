@@ -34,9 +34,6 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// UI Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
-	UWidgetComponent* HUDWidgetComponent;
 
 	// Acoustics Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Acoustics", meta = (AllowPrivateAccess = "true"))

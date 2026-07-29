@@ -72,6 +72,11 @@ void AInfiniteWorldGenerator::GenerateSplineAhead(float TargetDistance)
 void AInfiniteWorldGenerator::ManageChunks()
 {
 	if (!TrackedPlayer) return;
+	
+	if (ChunkLength <= 0.0f)
+	{
+		ChunkLength = 100000.0f; // Prevent Division By Zero
+	}
 
 	// Find nearest spline distance to player
 	float PlayerInputKey = MainTrackSpline->FindInputKeyClosestToWorldLocation(TrackedPlayer->GetActorLocation());

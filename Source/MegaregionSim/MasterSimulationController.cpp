@@ -2,7 +2,7 @@
 #include "GISDataManager.h"
 #include "MegaregionZoningGenerator.h"
 #include "AutomatedTrainSpawner.h"
-#include "TrackGenerator.h"
+
 #include "Engine/World.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
@@ -45,7 +45,7 @@ void AMasterSimulationController::BeginPlay()
 	if (World)
 	{
 		FActorSpawnParameters SpawnParams;
-		World->SpawnActor<ATrackGenerator>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
 	}
 }
 

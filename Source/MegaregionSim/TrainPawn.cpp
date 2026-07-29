@@ -59,10 +59,7 @@ ATrainPawn::ATrainPawn()
 		TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
 
-	// Setup UI Component
-	HUDWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HUDWidget"));
-	HUDWidgetComponent->SetupAttachment(RootComponent);
-	HUDWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+
 	
 	// Setup Phase 4 Proxy Components
 	AcousticsComponent = CreateDefaultSubobject<UTrainAcousticsComponent>(TEXT("AcousticsComponent"));
@@ -623,12 +620,12 @@ bool ATrainPawn::Server_SwitchTrack_Validate()
 void ATrainPawn::DerailTrain()
 {
 	// Phase 13: Physical Deformation Swap
-	if (UStaticMeshComponent* LocoMesh = Cast<UStaticMeshComponent>(RootComponent))
+	if (UPrimitiveComponent* LocoPhysics = Cast<UPrimitiveComponent>(RootComponent))
 	{
 		// In a full build, this swaps the mesh with a Geometry Collection component
 		UE_LOG(LogTemp, Error, TEXT("FATAL DERAILMENT! Physics bounds exceeded, swapping to Geometry Collection Deformation Mesh."));
-		LocoMesh->SetSimulatePhysics(true);
-		LocoMesh->AddImpulse(FVector(0, 1000000.0f, 500000.0f)); // Violent physics flip
+		LocoPhysics->SetSimulatePhysics(true);
+		LocoPhysics->AddImpulse(FVector(0, 1000000.0f, 500000.0f)); // Violent physics flip
 	}
 }
 
