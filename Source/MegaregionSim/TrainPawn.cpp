@@ -55,7 +55,8 @@ ATrainPawn::ATrainPawn()
 	if (TrainAsset.Succeeded())
 	{
 		TrainMesh->SetStaticMesh(TrainAsset.Object);
-		TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+		TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -200.0f));
+		TrainMesh->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
 		TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
 
