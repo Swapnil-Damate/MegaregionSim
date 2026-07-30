@@ -2,6 +2,8 @@
 #include "Components/SplineComponent.h"
 #include "MegaregionZoningGenerator.h"
 #include "UObject/ConstructorHelpers.h"
+#include "RailwaySignal.h"
+#include "Engine/World.h"
 
 AWorldChunk::AWorldChunk()
 {
@@ -76,7 +78,8 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 			if (bIsTunnel) continue; // Skip trees around tunnel entrances to avoid clipping
 
 			FVector SpawnLoc = SplineLoc + (SplineRight * Offset);
-			SpawnLoc.Z = SplineLoc.Z - 200.0f; // Sink into the ground to prevent floating
+			// Place trees/grass at the exact spline ground level (spline IS the ground reference)
+			SpawnLoc.Z = SplineLoc.Z;
 
 				FTransform InstanceTransform;
 				InstanceTransform.SetLocation(SpawnLoc);
@@ -93,7 +96,7 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 						FTransform GrassTransform;
 						float GrassX = SpawnLoc.X + FMath::RandRange(-2000.0f, 2000.0f);
 						float GrassY = SpawnLoc.Y + FMath::RandRange(-2000.0f, 2000.0f);
-						float GrassZ = SplineLoc.Z - 200.0f; // Keep on the flat ground
+						float GrassZ = SplineLoc.Z; // Match the spline ground level
 						
 						GrassTransform.SetLocation(FVector(GrassX, GrassY, GrassZ));
 						GrassTransform.SetScale3D(FVector(FMath::RandRange(1.0f, 2.0f)));
@@ -152,14 +155,18 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		TrackMeshISM->AddInstance(TrackTransform1);
 		TrackMeshISM->AddInstance(TrackTransform2);
 		
-		// Spawn a signal every 200000 meters
-		if (FMath::Fmod(Dist, 200000.0f) < TrackMeshLength * 0.5f)
+		// Spawn a real ARailwaySignal actor every 2km so the AITrainController can detect it
+		// (ISM instances are invisible to GetAllActorsOfClass — this was the core AI signal bug)
+		if (GetWorld() && FMath::Fmod(Dist, 200000.0f) < TrackMeshLength * 0.5f)
 		{
-			FTransform SignalTransform;
-			SignalTransform.SetLocation(StartLoc + (RightVec * 800.0f)); // 8m to the right
-			SignalTransform.SetRotation(StartRot.Quaternion());
-			SignalTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
-			SignalISM->AddInstance(SignalTransform);
+			FVector SignalLoc = StartLoc + (RightVec * 800.0f); // 8m to the right of track
+			FActorSpawnParameters SigParams;
+			SigParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			ARailwaySignal* NewSignal = GetWorld()->SpawnActor<ARailwaySignal>(ARailwaySignal::StaticClass(), SignalLoc, StartRot, SigParams);
+			if (NewSignal)
+			{
+				NewSignal->SetActorScale3D(FVector(1.0f, 1.0f, 1.0f));
+			}
 		}
 	}
 	// --- Procedural Stations ---

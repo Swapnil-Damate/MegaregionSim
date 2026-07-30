@@ -34,10 +34,13 @@ void AMasterSimulationController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GenerateEnvironment();
+	// NOTE: GenerateEnvironment() has been DISABLED.
+	// WorldChunk now handles all procedural environment spawning (trees, grass, buildings)
+	// along the spline track. Calling this static grid generator caused a massive
+	// duplicate set of floating/overlapping assets at the world origin.
+	// GenerateEnvironment();
 
 	UWorld* World = GetWorld();
-	// Spawn code relocated to InfiniteWorldGenerator
 }
 
 void AMasterSimulationController::GenerateEnvironment()

@@ -59,6 +59,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
 	float BrakeCylinderPressure;
 
+	// Timer to throttle per-tick disk logging (prevents 480 file writes/sec with 8 cars)
+	float PhysicsLogTimer = 0.0f;
+
 	// Linked Train Cars
 	UPROPERTY()
 	AActor* FrontAttachedCar;

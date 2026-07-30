@@ -13,6 +13,12 @@ AAITrainController::AAITrainController()
 void AAITrainController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Cache all signals once at startup rather than scanning every tick
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ARailwaySignal::StaticClass(), CachedSignals);
+	
+	// Refresh cache every 10 seconds in case new signals are dynamically spawned by chunks
+	GetWorldTimerManager().SetTimer(SignalCacheTimer, this, &AAITrainController::RefreshSignalCache, 10.0f, true);
 }
 
 void AAITrainController::OnPossess(APawn* InPawn)
@@ -28,6 +34,11 @@ void AAITrainController::Tick(float DeltaTime)
 	if (!ControlledTrain) return;
 
 	ScanForSignals();
+}
+
+void AAITrainController::RefreshSignalCache()
+{
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ARailwaySignal::StaticClass(), CachedSignals);
 }
 
 void AAITrainController::ScanForSignals()
@@ -81,25 +92,22 @@ void AAITrainController::ScanForSignals()
 
 ARailwaySignal* AAITrainController::GetNextSignalAhead()
 {
-	// Simple scanning logic: Find the closest signal in front of the train
-	TArray<AActor*> FoundSignals;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ARailwaySignal::StaticClass(), FoundSignals);
-	
+	// Use cached signal list — refreshed every 10s instead of scanning all world actors every tick
 	ARailwaySignal* ClosestSignal = nullptr;
 	float ClosestDist = 9999999.0f;
 	FVector TrainLoc = ControlledTrain->GetActorLocation();
 	FVector TrainForward = ControlledTrain->GetActorForwardVector();
 
-	for (AActor* Actor : FoundSignals)
+	for (AActor* Actor : CachedSignals)
 	{
 		ARailwaySignal* Signal = Cast<ARailwaySignal>(Actor);
-		if (Signal)
+		if (Signal && IsValid(Signal))
 		{
 			FVector DirToSignal = (Signal->GetActorLocation() - TrainLoc).GetSafeNormal();
 			float DotProduct = FVector::DotProduct(TrainForward, DirToSignal);
-			
+
 			// Only consider signals that are IN FRONT of the train
-			if (DotProduct > 0.5f) 
+			if (DotProduct > 0.5f)
 			{
 				float Dist = FVector::Distance(TrainLoc, Signal->GetActorLocation());
 				if (Dist < ClosestDist)

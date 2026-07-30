@@ -1,4 +1,5 @@
 #include "TrainPawn.h"
+#include "TrainCar.h"
 #include "Math/UnrealMathUtility.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -168,8 +169,11 @@ void ATrainPawn::BeginPlay()
 		}
 	}
 
-	// Phase 5: Spawn the 8-car Freight Consist automatically
-	SpawnConsist();
+	// Phase 5: Spawn the 8-car Freight Consist — DEFERRED by 0.1 seconds
+	// This guarantees InfiniteWorldGenerator::BeginPlay() has already run and
+	// spawned physical track chunks beneath us before the cars drop with physics.
+	FTimerHandle ConsistSpawnTimer;
+	GetWorldTimerManager().SetTimer(ConsistSpawnTimer, this, &ATrainPawn::SpawnConsist, 0.1f, false);
 
 	// Phase 2.2: Generate a Contract automatically for the Visual Test!
 	if (UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
@@ -182,60 +186,44 @@ void ATrainPawn::SpawnConsist()
 {
 	if (GetLocalRole() != ROLE_Authority) return;
 
-	UClass* ContainerClass = FindObject<UClass>(nullptr, TEXT("/Script/Engine.StaticMeshActor"));
-	if (!ContainerClass) return;
-
-	UStaticMesh* ContainerMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/FinalAssets/Tank_Body.Tank_Body"));
-	
 	FVector SpawnLoc = GetActorLocation();
 	FVector ForwardVec = GetActorForwardVector();
-	
-	AActor* LastCar = this;
+
+	ATrainCar* LastCar = nullptr;
+	UPrimitiveComponent* LastPhysComp = Cast<UPrimitiveComponent>(GetRootComponent());
 
 	for (int i = 0; i < 8; i++)
 	{
-		// Spawn cars 2000 units behind each other
-		SpawnLoc -= (ForwardVec * 2000.0f);
-		
+		// Place each car 2200 units (22m) behind the previous — matching the 20m box + 2m gap
+		SpawnLoc -= (ForwardVec * 2200.0f);
+
 		FActorSpawnParameters SpawnParams;
-		AActor* NewCar = GetWorld()->SpawnActor<AActor>(ContainerClass, SpawnLoc, GetActorRotation(), SpawnParams);
-		
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		// Spawn a proper ATrainCar — this activates all brake, slosh, and coupler physics
+		ATrainCar* NewCar = GetWorld()->SpawnActor<ATrainCar>(ATrainCar::StaticClass(), SpawnLoc, GetActorRotation(), SpawnParams);
+
 		if (NewCar)
 		{
-			UStaticMeshComponent* MeshComp = NewCar->FindComponentByClass<UStaticMeshComponent>();
-			if (MeshComp && ContainerMesh)
+			// Link rear of previous actor to front of this car using ATrainCar's built-in FrontCoupler
+			if (NewCar->FrontCoupler && LastPhysComp)
 			{
-				MeshComp->SetMobility(EComponentMobility::Movable);
-				MeshComp->SetStaticMesh(ContainerMesh);
-				// The Train asset is already centered perfectly; no Z offset needed!
-				MeshComp->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-				MeshComp->SetCollisionProfileName(TEXT("PhysicsActor"));
-				MeshComp->SetSimulatePhysics(true);
-				MeshComp->SetMassOverrideInKg(NAME_None, 5000.0f, true); // 5 tons each
+				NewCar->FrontCoupler->SetConstrainedComponents(
+					LastPhysComp, NAME_None,
+					NewCar->CarBody, NAME_None
+				);
+				NewCar->FrontCoupler->SetLinearXLimit(LCM_Limited, 15.0f); // 15cm slack
+				NewCar->FrontCoupler->SetLinearYLimit(LCM_Locked, 0.0f);
+				NewCar->FrontCoupler->SetLinearZLimit(LCM_Locked, 0.0f);
+				NewCar->FrontCoupler->SetAngularSwing1Limit(ACM_Limited, 10.0f);
+				NewCar->FrontCoupler->SetAngularSwing2Limit(ACM_Limited, 10.0f);
+				NewCar->FrontCoupler->SetAngularTwistLimit(ACM_Locked, 0.0f);
 			}
-			
-			UPhysicsConstraintComponent* Coupler = NewObject<UPhysicsConstraintComponent>(NewCar, UPhysicsConstraintComponent::StaticClass());
-			Coupler->RegisterComponent();
-			Coupler->AttachToComponent(NewCar->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-			// Place coupler exactly halfway between the LastCar and NewCar
-			FVector CouplerLoc = SpawnLoc + (ForwardVec * 1000.0f); // 1000 units ahead of NewCar (towards LastCar)
-			Coupler->SetWorldLocation(CouplerLoc);
 
-			UPrimitiveComponent* LastComp = Cast<UPrimitiveComponent>(LastCar->GetRootComponent());
-			UPrimitiveComponent* NewComp = Cast<UPrimitiveComponent>(NewCar->GetRootComponent());
+			// Track linked actors for brake pipe pressure propagation
+			NewCar->FrontAttachedCar = (LastCar != nullptr) ? (AActor*)LastCar : (AActor*)this;
 
-			if (LastComp && NewComp)
-			{
-				Coupler->SetConstrainedComponents(LastComp, NAME_None, NewComp, NAME_None);
-				Coupler->SetLinearXLimit(LCM_Locked, 0.0f);
-				Coupler->SetLinearYLimit(LCM_Locked, 0.0f);
-				Coupler->SetLinearZLimit(LCM_Locked, 0.0f);
-				
-				Coupler->SetAngularSwing1Limit(ACM_Limited, 5.0f);
-				Coupler->SetAngularSwing2Limit(ACM_Limited, 5.0f);
-				Coupler->SetAngularTwistLimit(ACM_Limited, 2.0f);
-			}
-			
+			LastPhysComp = NewCar->CarBody;
 			LastCar = NewCar;
 		}
 	}

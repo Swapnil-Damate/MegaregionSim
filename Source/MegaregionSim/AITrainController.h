@@ -32,4 +32,9 @@ private:
 
 	float TargetSpeedKmh;
 	float SafeFollowingDistance;
+
+	// Cached signal list to avoid GetAllActorsOfClass every tick
+	TArray<AActor*> CachedSignals;
+	FTimerHandle SignalCacheTimer;
+	void RefreshSignalCache();
 };

@@ -21,8 +21,7 @@ ATrainCar::ATrainCar()
 	CarBody->SetMassOverrideInKg(NAME_None, MassInTons * 1000.0f, true);
 	CarBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
-	// Lock Physics to 1D rail movement to prevent derailment
-	CarBody->BodyInstance.bLockYTranslation = true;
+	// Lock only rotation axes — Y translation lock removed because it fights coupler forces on curved track
 	CarBody->BodyInstance.bLockXRotation = true;
 	CarBody->BodyInstance.bLockYRotation = true;
 	CarBody->BodyInstance.bLockZRotation = true;
@@ -81,7 +80,13 @@ void ATrainCar::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	LogPhysicsState();
+	// Throttle physics logging to once every 5 seconds to prevent I/O stalling (was 60x/sec per car!)
+	PhysicsLogTimer += DeltaTime;
+	if (PhysicsLogTimer >= 5.0f)
+	{
+		PhysicsLogTimer = 0.0f;
+		LogPhysicsState();
+	}
 
 	// Pneumatic Brake Line Sharing
 	if (FrontAttachedCar)
