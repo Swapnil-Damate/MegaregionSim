@@ -65,9 +65,8 @@ void AInfiniteWorldGenerator::GenerateSplineAhead(float TargetDistance)
 	{
 		LastSplineGenerationDistance += 5000.0f; // Add point every 50m
 		
-		// Procedural curve math (extremely gentle curves to prevent spiral tangents)
-		float NoiseX = FMath::PerlinNoise1D(LastSplineGenerationDistance * 0.00001f);
-		float CurveY = NoiseX * 1000.0f; // Limit to very slight 10m lateral bends
+		// Force spline to be perfectly dead-straight to prevent automatic tangent loops and crossing
+		float CurveY = 0.0f; // No lateral noise!
 		
 		// Elevation math (perfectly flat for now to fix flying tracks)
 		float CurveZ = 0.0f; // Force flat ground!

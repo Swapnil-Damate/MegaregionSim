@@ -87,8 +87,8 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 					InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
 					PineTreeISM->AddInstance(InstanceTransform);
 					
-					// Scatter Grass nearby
-					for (int i = 0; i < 3; i++)
+					// Scatter Grass nearby (Increased density from 3 to 30)
+					for (int i = 0; i < 30; i++)
 					{
 						FTransform GrassTransform;
 						float GrassX = SpawnLoc.X + FMath::RandRange(-2000.0f, 2000.0f);
@@ -116,14 +116,14 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 {
 	// A simple approach using ISM for tracks (fast).
 	float TrackMeshLength = 2500.0f; // 25 meters per mesh segment
-	float ScaleX = 1.0f;
+	float ScaleY = 1.0f;
 	
 	if (TrackMeshISM->GetStaticMesh())
 	{
-		float MeshLength = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().X;
+		float MeshLength = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().Y;
 		if (MeshLength > 10.0f)
 		{
-			ScaleX = TrackMeshLength / MeshLength;
+			ScaleY = TrackMeshLength / MeshLength;
 		}
 	}
 	
@@ -131,18 +131,23 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 	{
 		FVector StartLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		FRotator StartRot = Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		// Flatten track rolling to prevent visual twisting
 		StartRot.Roll = 0.0f;
+		// Restore +90 Yaw because the track mesh is built sideways along the Y-axis
+		StartRot.Yaw += 90.0f;
+		
 		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		
 		FTransform TrackTransform1;
 		TrackTransform1.SetLocation(StartLoc);
 		TrackTransform1.SetRotation(StartRot.Quaternion());
-		TrackTransform1.SetScale3D(FVector(ScaleX, 1.0f, 1.0f)); 
+		TrackTransform1.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
 		
 		FTransform TrackTransform2;
-		TrackTransform2.SetLocation(StartLoc + (RightVec * 500.0f)); // Double track offset 5 meters
+		// Increase double track separation to 20 meters (2000 units)
+		TrackTransform2.SetLocation(StartLoc + (RightVec * 2000.0f)); 
 		TrackTransform2.SetRotation(StartRot.Quaternion());
-		TrackTransform2.SetScale3D(FVector(ScaleX, 1.0f, 1.0f)); 
+		TrackTransform2.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
 		
 		TrackMeshISM->AddInstance(TrackTransform1);
 		TrackMeshISM->AddInstance(TrackTransform2);

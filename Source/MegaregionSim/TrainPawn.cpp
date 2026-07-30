@@ -57,7 +57,8 @@ ATrainPawn::ATrainPawn()
 	if (TrainAsset.Succeeded())
 	{
 		TrainMesh->SetStaticMesh(TrainAsset.Object);
-		TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -200.0f));
+		// The Train asset is already centered perfectly; no Z offset needed!
+		TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 		TrainMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 		TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
@@ -206,8 +207,8 @@ void ATrainPawn::SpawnConsist()
 			{
 				MeshComp->SetMobility(EComponentMobility::Movable);
 				MeshComp->SetStaticMesh(ContainerMesh);
-				// Lower the mesh by 200 units to sit flush on the rails, just like the locomotive
-				MeshComp->SetRelativeLocation(FVector(0.0f, 0.0f, -200.0f));
+				// The Train asset is already centered perfectly; no Z offset needed!
+				MeshComp->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 				MeshComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 				MeshComp->SetSimulatePhysics(true);
 				MeshComp->SetMassOverrideInKg(NAME_None, 5000.0f, true); // 5 tons each
