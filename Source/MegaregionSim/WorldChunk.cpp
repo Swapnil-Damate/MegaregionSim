@@ -57,11 +57,12 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 		if (TrackMountainZ > SplineLoc.Z + 1500.0f)
 		{
 			bIsTunnel = true;
-			FTransform TunnelTransform;
-			TunnelTransform.SetLocation(SplineLoc);
-			TunnelTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World).Quaternion());
-			TunnelTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
-			TunnelISM->AddInstance(TunnelTransform);
+			// Tunnel mesh scale is corrupt in the asset, disabling procedural spawn to fix visuals
+			// FTransform TunnelTransform;
+			// TunnelTransform.SetLocation(SplineLoc);
+			// TunnelTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World).Quaternion());
+			// TunnelTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+			// TunnelISM->AddInstance(TunnelTransform);
 		}
 		
 		for (float Offset = -10000.0f; Offset <= 10000.0f; Offset += 3000.0f)
@@ -148,13 +149,13 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		
 		if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
 		{
-			// Spawn a basic Station Platform using Skyscraper mesh (Proxy)
-			FTransform StationTransform;
-			FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
-			StationTransform.SetLocation(Loc - (RightVec * 300.0f));
-			StationTransform.SetScale3D(FVector(0.5f, 5.0f, 0.2f)); // Long, flat platform shape
-			StationTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
-			SkyscraperISM->AddInstance(StationTransform);
+			// Skyscraper scale is massive and blocks view, disabling proxy spawn for now
+			// FTransform StationTransform;
+			// FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+			// StationTransform.SetLocation(Loc - (RightVec * 300.0f));
+			// StationTransform.SetScale3D(FVector(0.5f, 5.0f, 0.2f)); 
+			// StationTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
+			// SkyscraperISM->AddInstance(StationTransform);
 		}
 	}
 
@@ -181,18 +182,14 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		// BoomGateISM->AddInstance(GateTransformL);
 		// BoomGateISM->AddInstance(GateTransformR);
 		
-		// Spawn a basic Overbridge using Skyscraper mesh (Proxy)
-		FTransform BridgeTransform;
-		// Raise it above the tracks
-		Loc.Z += 2000.0f;
-		BridgeTransform.SetLocation(Loc);
-		BridgeTransform.SetScale3D(FVector(5.0f, 0.5f, 0.2f)); // Long across the tracks
-		
-		// Rotate 90 degrees to the track
-		FRotator SplineRot = Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
-		SplineRot.Yaw += 90.0f;
-		BridgeTransform.SetRotation(SplineRot.Quaternion());
-		
-		SkyscraperISM->AddInstance(BridgeTransform);
+		// Skyscraper proxy overbridge disabled due to massive scale
+		// FTransform BridgeTransform;
+		// Loc.Z += 2000.0f;
+		// BridgeTransform.SetLocation(Loc);
+		// BridgeTransform.SetScale3D(FVector(5.0f, 0.5f, 0.2f));
+		// FRotator SplineRot = Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		// SplineRot.Yaw += 90.0f;
+		// BridgeTransform.SetRotation(SplineRot.Quaternion());
+		// SkyscraperISM->AddInstance(BridgeTransform);
 	}
 }

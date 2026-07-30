@@ -137,6 +137,9 @@ void ATrainPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Teleport the train above the exact origin of the procedural tracks so it falls onto them
+	SetActorLocationAndRotation(FVector(0.0f, 0.0f, 400.0f), FRotator::ZeroRotator);
+
 	// Clear the physics log file at the start of a new run
 	if (GetLocalRole() == ROLE_Authority)
 	{
