@@ -138,7 +138,8 @@ void ATrainPawn::BeginPlay()
 	Super::BeginPlay();
 
 	// Teleport the train 200m ahead of the origin so the cars have track to spawn on behind it
-	SetActorLocationAndRotation(FVector(20000.0f, 0.0f, 400.0f), FRotator::ZeroRotator);
+	// Z=50 reduces physics collision drop velocity to prevent constraints exploding
+	SetActorLocationAndRotation(FVector(20000.0f, 0.0f, 50.0f), FRotator::ZeroRotator);
 
 	// Clear the physics log file at the start of a new run
 	if (GetLocalRole() == ROLE_Authority)
@@ -412,9 +413,11 @@ void ATrainPawn::Tick(float DeltaTime)
 	if (EraVFXManager)
 	{
 		float EngineLoad = CurrentThrottleNotch / 8.0f;
-		// Check for Over-speed Derailment
-		if (SpeedMetersPerSecond * 3.6f > 150.0f)
+		// Check for Over-speed Derailment (Increased threshold to prevent physics jitter derailments on spawn)
+		static bool bHasDerailed = false;
+		if (SpeedMetersPerSecond * 3.6f > 300.0f && !bHasDerailed)
 		{
+			bHasDerailed = true;
 			DerailTrain();
 		}
 	
