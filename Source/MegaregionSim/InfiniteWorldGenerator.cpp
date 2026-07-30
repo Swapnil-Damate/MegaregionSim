@@ -20,7 +20,7 @@ AInfiniteWorldGenerator::AInfiniteWorldGenerator()
 	MainTrackSpline->AddSplinePoint(FVector(1000,0,0), ESplineCoordinateSpace::World); // Initial direction
 }
 
-static float GetGroundHeightAtLocation(UWorld* World, float X, float Y, float DefaultZ)
+static float GetGroundHeightForGenerator(UWorld* World, float X, float Y, float DefaultZ)
 {
 	if (!World) return DefaultZ;
 
@@ -88,7 +88,7 @@ void AInfiniteWorldGenerator::BeginPlay()
 	GenerationDistance = 5;
 
 	// Query starting ground height
-	LastSplineZ = GetGroundHeightAtLocation(GetWorld(), 0.0f, 0.0f, 0.0f);
+	LastSplineZ = GetGroundHeightForGenerator(GetWorld(), 0.0f, 0.0f, 0.0f);
 
 	// Generate initial spline far ahead so all startup chunks have valid points
 	GenerateSplineAhead(ChunkLength * (GenerationDistance + 2));
@@ -139,7 +139,7 @@ void AInfiniteWorldGenerator::GenerateSplineAhead(float TargetDistance)
 		float CurveY = 0.0f; // No lateral noise!
 		
 		// Use raycasting to find the landscape height at this coordinate!
-		float TargetZ = GetGroundHeightAtLocation(GetWorld(), LastSplineGenerationDistance, CurveY, 0.0f);
+		float TargetZ = GetGroundHeightForGenerator(GetWorld(), LastSplineGenerationDistance, CurveY, 0.0f);
 		
 		// Smooth out height transitions to mimic grading (Max 1.5m vertical change per 50m segment - 3% grade)
 		float MaxDeltaZ = 150.0f;

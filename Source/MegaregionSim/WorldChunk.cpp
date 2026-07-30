@@ -56,7 +56,7 @@ void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineCom
 	GenerateTrackSplineMeshes(InSpline, StartDistance, EndDistance);
 }
 
-static float GetGroundHeightAtLocation(UWorld* World, float X, float Y, float DefaultZ)
+static float GetGroundHeightForChunk(UWorld* World, float X, float Y, float DefaultZ)
 {
 	if (!World) return DefaultZ;
 
@@ -111,7 +111,7 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 			FVector SpawnXY = SplineLoc + (SplineRight * Offset);
 
 			// Find exact ground Z from landscape collision
-			float GroundZ = GetGroundHeightAtLocation(GetWorld(), SpawnXY.X, SpawnXY.Y, SplineLoc.Z);
+			float GroundZ = GetGroundHeightForChunk(GetWorld(), SpawnXY.X, SpawnXY.Y, SplineLoc.Z);
 			FVector SpawnLoc(SpawnXY.X, SpawnXY.Y, GroundZ);
 
 			FTransform T;
@@ -135,7 +135,7 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 				{
 					float GX = SpawnLoc.X + FMath::RandRange(-1500.0f, 1500.0f);
 					float GY = SpawnLoc.Y + FMath::RandRange(-1500.0f, 1500.0f);
-					float GZ = GetGroundHeightAtLocation(GetWorld(), GX, GY, SpawnLoc.Z);
+					float GZ = GetGroundHeightForChunk(GetWorld(), GX, GY, SpawnLoc.Z);
 
 					FTransform GT;
 					GT.SetLocation(FVector(GX, GY, GZ));
@@ -210,7 +210,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		TrackMeshISM->AddInstance(T4);
 
 		// ── Main Track Bridge/Tunnel ──────────────────────────────────────────
-		float GroundZ1 = GetGroundHeightAtLocation(GetWorld(), StartLoc.X, StartLoc.Y, StartLoc.Z);
+		float GroundZ1 = GetGroundHeightForChunk(GetWorld(), StartLoc.X, StartLoc.Y, StartLoc.Z);
 		float ZDiff1 = StartLoc.Z - GroundZ1;
 		if (ZDiff1 > 500.0f)
 		{
@@ -231,7 +231,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 
 		// ── Parallel Track Bridge/Tunnel ──────────────────────────────────────
 		FVector ParallelLoc = StartLoc + (RightVec * 3500.0f);
-		float GroundZ2 = GetGroundHeightAtLocation(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
+		float GroundZ2 = GetGroundHeightForChunk(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
 		float ZDiff2 = ParallelLoc.Z - GroundZ2;
 		if (ZDiff2 > 500.0f)
 		{

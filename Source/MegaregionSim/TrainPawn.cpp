@@ -177,8 +177,8 @@ void ATrainPawn::BeginPlay()
 	// Clear physics log
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		FString LogPath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
-		FFileHelper::SaveStringToFile(TEXT("--- NEW RUN ---\n"), *LogPath);
+		FString PhysicsLogFilePath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
+		FFileHelper::SaveStringToFile(TEXT("--- NEW RUN ---\n"), *PhysicsLogFilePath);
 	}
 
 	// Air brake initialisation
