@@ -28,10 +28,17 @@ void UAutomatedTrainSpawner::SpawnVirtualTrains(int32 Count)
 void UAutomatedTrainSpawner::Tick(float DeltaTime)
 {
 	// Data-oriented array iteration for CPU performance (Replaces experimental MassEntity plugin)
+	const float MaxSpeedMs = 55.5f; // 200 km/h cap
+	const float WorldExtent = 500000.0f; // Wrap at 5km to stay in generated world
+
 	for (FTrainFragment& Train : VirtualTrains)
 	{
-		float Acceleration = Train.Throttle * 10.0f; // 10 m/s^2 arbitrarily for virtual trains
-		Train.Velocity += Acceleration * DeltaTime;
+		float Acceleration = Train.Throttle * 2.0f; // Gentle acceleration for virtual trains
+		Train.Velocity = FMath::Min(Train.Velocity + Acceleration * DeltaTime, MaxSpeedMs);
 		Train.Position.X += Train.Velocity * DeltaTime;
+
+		// Wrap position so virtual trains stay within the generated world extent
+		if (Train.Position.X > WorldExtent)  Train.Position.X -= WorldExtent * 2.0f;
+		if (Train.Position.X < -WorldExtent) Train.Position.X += WorldExtent * 2.0f;
 	}
 }

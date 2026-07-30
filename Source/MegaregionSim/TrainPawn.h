@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "ChaosWheeledVehicleMovementComponent.h"
 #include "TrainAcousticsComponent.h"
 #include "DynamicEraVFXManager.h"
 #include "InputActionValue.h"
@@ -12,7 +11,6 @@ class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
-class UTrainHUDWidget;
 class UPhysicsConstraintComponent;
 class USphereComponent;
 class UWidgetComponent;
@@ -67,13 +65,6 @@ public:
 
 	void ThrottleInput(const FInputActionValue& Value);
 	void BrakeInput(const FInputActionValue& Value);
-
-	// UI Integration
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UTrainHUDWidget> HUDWidgetClass;
-
-	UPROPERTY()
-	UTrainHUDWidget* HUDWidgetInstance;
 
 	// Train Physics Variables
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics")

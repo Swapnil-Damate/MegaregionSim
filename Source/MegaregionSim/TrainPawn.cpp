@@ -556,8 +556,12 @@ void ATrainPawn::ToggleHeadlight()
 
 void ATrainPawn::PlayHorn()
 {
-	// Trigger heavy acoustic reverb blast
-	UGameplayStatics::PlaySoundAtLocation(this, LoadObject<USoundBase>(nullptr, TEXT("/Engine/VTE/EngineSounds/Explosion.Explosion")), GetActorLocation(), 1.5f, 0.5f);
+	// Play horn sound — use a safe no-crash path
+	if (USoundBase* HornSound = LoadObject<USoundBase>(nullptr, TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/SoundCue_StarterContent_Audio.SoundCue_StarterContent_Audio")))
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HornSound, GetActorLocation(), 1.5f, 0.5f);
+	}
+	UE_LOG(LogTemp, Log, TEXT("HORN BLAST!"));
 }
 
 void ATrainPawn::SwitchTrack()
@@ -575,11 +579,7 @@ void ATrainPawn::SwitchTrack()
 	CurrentLoc += (RightVec * 500.0f); 
 
 	SetActorLocation(CurrentLoc, false, nullptr, ETeleportType::TeleportPhysics);
-
-	if (HUDWidgetInstance)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Switched to Parallel Track!"));
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Switched to Parallel Track!"));
 }
 
 void ATrainPawn::Server_SwitchTrack_Implementation()
