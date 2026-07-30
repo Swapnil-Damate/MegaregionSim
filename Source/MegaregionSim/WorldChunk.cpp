@@ -88,7 +88,6 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 					InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0))); // Snap rotation
 					SkyscraperISM->AddInstance(InstanceTransform);
 				}
-			}
 		}
 	}
 }
