@@ -28,6 +28,9 @@ AWorldChunk::AWorldChunk()
 	
 	TrackMeshISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TrackMeshISM"));
 	TrackMeshISM->SetupAttachment(RootComponent);
+	// Enable collision so the train can physically sit on the tracks
+	TrackMeshISM->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	TrackMeshISM->SetCollisionProfileName(TEXT("BlockAll"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrackAsset(TEXT("StaticMesh'/Game/FinalAssets/Track_Mesh.Track_Mesh'"));
 	if (TrackAsset.Succeeded()) TrackMeshISM->SetStaticMesh(TrackAsset.Object);
 
@@ -50,176 +53,153 @@ void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineCom
 
 void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist)
 {
-	float StepSize = 2500.0f; // Every 25 meters
-	for (float Dist = StartDist; Dist < EndDist; Dist += StepSize)
+	const float NoiseScale   = 0.00015f;
+	// Terrain sampling step — every 50m along spline
+	const float SplineStep   = 5000.0f;
+	// How far each side of track to scatter vegetation (500m each side)
+	const float LateralHalf  = 50000.0f;
+	const float LateralStep  = 3000.0f; // Every 30m laterally
+
+	for (float Dist = StartDist; Dist < EndDist; Dist += SplineStep)
 	{
-		FVector SplineLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		FVector SplineRight = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		
+		FVector  SplineLoc   = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		FVector  SplineRight = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+
 		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(SplineLoc.X, SplineLoc.Y));
-		
-		float NoiseScale = 0.00015f;
-		float TrackMountainZ = FMath::PerlinNoise2D(FVector2D(SplineLoc.X * NoiseScale, SplineLoc.Y * NoiseScale)) * 12000.0f;
-		bool bIsTunnel = false;
-		if (TrackMountainZ > SplineLoc.Z + 1500.0f)
-		{
-			bIsTunnel = true;
-			// Tunnel mesh scale is corrupt in the asset, disabling procedural spawn to fix visuals
-			// FTransform TunnelTransform;
-			// TunnelTransform.SetLocation(SplineLoc);
-			// TunnelTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World).Quaternion());
-			// TunnelTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
-			// TunnelISM->AddInstance(TunnelTransform);
-		}
-		
-		for (float Offset = -10000.0f; Offset <= 10000.0f; Offset += 3000.0f)
-		{
-			if (FMath::Abs(Offset) < 2500.0f) continue; // Wider clearance for track
-			if (bIsTunnel) continue; // Skip trees around tunnel entrances to avoid clipping
 
-			FVector SpawnLoc = SplineLoc + (SplineRight * Offset);
-			// Place trees/grass at the exact spline ground level (spline IS the ground reference)
-			SpawnLoc.Z = SplineLoc.Z;
+		for (float Offset = -LateralHalf; Offset <= LateralHalf; Offset += LateralStep)
+		{
+			// Keep a wide clearance corridor around the track itself
+			if (FMath::Abs(Offset) < 3000.0f) continue;
 
-				FTransform InstanceTransform;
-				InstanceTransform.SetLocation(SpawnLoc);
-				
-				if (Zone == EZoningClassification::Nature || Zone == EZoningClassification::Village)
+			FVector SpawnXY = SplineLoc + (SplineRight * Offset);
+
+			// Apply full Perlin height so vegetation sits on hills and valleys
+			float TerrainZ = FMath::PerlinNoise2D(FVector2D(SpawnXY.X * NoiseScale, SpawnXY.Y * NoiseScale)) * 12000.0f;
+			FVector SpawnLoc(SpawnXY.X, SpawnXY.Y, TerrainZ);
+
+			FTransform T;
+			T.SetLocation(SpawnLoc);
+
+			bool bNature = (Zone == EZoningClassification::Nature || Zone == EZoningClassification::Village);
+			bool bUrban  = (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs);
+
+			// Far from track always gets nature regardless of zoning (makes map look alive)
+			if (FMath::Abs(Offset) > 20000.0f) bNature = true;
+
+			if (bNature)
+			{
+				// ── Pine trees ───────────────────────────────────────────────
+				T.SetScale3D(FVector(FMath::RandRange(0.7f, 2.2f))); // varied sizes
+				T.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
+				PineTreeISM->AddInstance(T);
+
+				// ── Dense grass underneath each tree (15 patches) ────────────
+				for (int g = 0; g < 15; g++)
 				{
-					InstanceTransform.SetScale3D(FVector(FMath::RandRange(0.8f, 1.5f)));
-					InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
-					PineTreeISM->AddInstance(InstanceTransform);
-					
-					// Scatter Grass nearby (Increased density from 3 to 30)
-					for (int i = 0; i < 30; i++)
-					{
-						FTransform GrassTransform;
-						float GrassX = SpawnLoc.X + FMath::RandRange(-2000.0f, 2000.0f);
-						float GrassY = SpawnLoc.Y + FMath::RandRange(-2000.0f, 2000.0f);
-						float GrassZ = SplineLoc.Z; // Match the spline ground level
-						
-						GrassTransform.SetLocation(FVector(GrassX, GrassY, GrassZ));
-						GrassTransform.SetScale3D(FVector(FMath::RandRange(1.0f, 2.0f)));
-						GrassTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
-						GrassISM->AddInstance(GrassTransform);
-					}
+					float GX = SpawnLoc.X + FMath::RandRange(-1500.0f, 1500.0f);
+					float GY = SpawnLoc.Y + FMath::RandRange(-1500.0f, 1500.0f);
+					float GZ = FMath::PerlinNoise2D(FVector2D(GX * NoiseScale, GY * NoiseScale)) * 12000.0f;
+
+					FTransform GT;
+					GT.SetLocation(FVector(GX, GY, GZ));
+					GT.SetScale3D(FVector(FMath::RandRange(0.5f, 1.8f)));
+					GT.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
+					GrassISM->AddInstance(GT);
 				}
-				else if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
-				{
-					// Buildings scale to random height, keep X/Y uniform. Add some rotation variation.
-					InstanceTransform.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 5.0f)));
-					InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0))); // Snap rotation
-					SkyscraperISM->AddInstance(InstanceTransform);
-				}
+			}
+			else if (bUrban)
+			{
+				// ── Skyscrapers with random height ────────────────────────────
+				T.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 6.0f)));
+				T.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0)));
+				SkyscraperISM->AddInstance(T);
+			}
 		}
 	}
 }
 
 void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float StartDist, float EndDist)
 {
-	// A simple approach using ISM for tracks (fast).
-	float TrackMeshLength = 2500.0f; // 25 meters per mesh segment
+	const float TrackSegLen = 2500.0f; // 25m per segment
+
+	// Compute scale from mesh bounding box Y-axis (track mesh is modeled sideways)
 	float ScaleY = 1.0f;
-	
 	if (TrackMeshISM->GetStaticMesh())
 	{
-		float MeshLength = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().Y;
-		if (MeshLength > 10.0f)
+		float MeshLen = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().Y;
+		if (MeshLen > 1.0f) // safe guard: only override if mesh bounds are non-zero
 		{
-			ScaleY = TrackMeshLength / MeshLength;
+			ScaleY = TrackSegLen / MeshLen;
 		}
 	}
-	
-	for (float Dist = StartDist; Dist < EndDist; Dist += TrackMeshLength)
+	// Hard fallback: if asset failed to load or bounds came back zero, use 1.0
+	if (ScaleY <= 0.0f || ScaleY > 1000.0f) ScaleY = 1.0f;
+
+	for (float Dist = StartDist; Dist < EndDist; Dist += TrackSegLen)
 	{
-		FVector StartLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		FVector  StartLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		FRotator StartRot = Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		// Flatten track rolling to prevent visual twisting
 		StartRot.Roll = 0.0f;
-		// Restore +90 Yaw because the track mesh is built sideways along the Y-axis
+		// Track mesh is built sideways in Blender — rotate 90° so it faces forward
 		StartRot.Yaw += 90.0f;
-		
+
 		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		
-		FTransform TrackTransform1;
-		TrackTransform1.SetLocation(StartLoc);
-		TrackTransform1.SetRotation(StartRot.Quaternion());
-		TrackTransform1.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
-		
-		FTransform TrackTransform2;
-		// Increase double track separation to 20 meters (2000 units)
-		TrackTransform2.SetLocation(StartLoc + (RightVec * 2000.0f)); 
-		TrackTransform2.SetRotation(StartRot.Quaternion());
-		TrackTransform2.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
-		
-		TrackMeshISM->AddInstance(TrackTransform1);
-		TrackMeshISM->AddInstance(TrackTransform2);
-		
-		// Spawn a real ARailwaySignal actor every 2km so the AITrainController can detect it
-		// (ISM instances are invisible to GetAllActorsOfClass — this was the core AI signal bug)
-		if (GetWorld() && FMath::Fmod(Dist, 200000.0f) < TrackMeshLength * 0.5f)
+
+		// ── Left rail ────────────────────────────────────────────────────────
+		FTransform T1;
+		T1.SetLocation(StartLoc - (RightVec * 750.0f));  // 7.5m left of centre
+		T1.SetRotation(StartRot.Quaternion());
+		T1.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+		TrackMeshISM->AddInstance(T1);
+
+		// ── Right rail ───────────────────────────────────────────────────────
+		FTransform T2;
+		T2.SetLocation(StartLoc + (RightVec * 750.0f));  // 7.5m right of centre
+		T2.SetRotation(StartRot.Quaternion());
+		T2.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+		TrackMeshISM->AddInstance(T2);
+
+		// ── Parallel second track (far-side) 20m right ───────────────────────
+		FTransform T3;
+		T3.SetLocation(StartLoc + (RightVec * 2750.0f));
+		T3.SetRotation(StartRot.Quaternion());
+		T3.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+		TrackMeshISM->AddInstance(T3);
+
+		FTransform T4;
+		T4.SetLocation(StartLoc + (RightVec * 4250.0f));
+		T4.SetRotation(StartRot.Quaternion());
+		T4.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+		TrackMeshISM->AddInstance(T4);
+
+		// ── Signal every 2km via a real ARailwaySignal actor ─────────────────
+		if (GetWorld() && FMath::Fmod(Dist, 200000.0f) < TrackSegLen * 0.5f)
 		{
-			FVector SignalLoc = StartLoc + (RightVec * 800.0f); // 8m to the right of track
-			FActorSpawnParameters SigParams;
-			SigParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			ARailwaySignal* NewSignal = GetWorld()->SpawnActor<ARailwaySignal>(ARailwaySignal::StaticClass(), SignalLoc, StartRot, SigParams);
-			if (NewSignal)
-			{
-				NewSignal->SetActorScale3D(FVector(1.0f, 1.0f, 1.0f));
-			}
+			FVector SignalLoc = StartLoc + (RightVec * 1500.0f);
+			FActorSpawnParameters SP;
+			SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			ARailwaySignal* Sig = GetWorld()->SpawnActor<ARailwaySignal>(
+				ARailwaySignal::StaticClass(), SignalLoc, StartRot, SP);
+			if (Sig) Sig->SetActorScale3D(FVector(1.0f));
 		}
 	}
-	// --- Procedural Stations ---
-	// Roughly every 10 miles (StartDist % 1600000 == 0), spawn a station if we are in an urban zone
+
+	// ── Procedural Stations (every 10 miles in Urban zones) ──────────────────
 	float StationFmod = FMath::Fmod(StartDist, 1600000.0f);
-	if (StationFmod < 100.0f || StationFmod > 1600000.0f - 100.0f)
+	if (StationFmod < 100.0f)
 	{
 		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
 		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
-		
 		if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
 		{
-			// Skyscraper scale is massive and blocks view, disabling proxy spawn for now
-			// FTransform StationTransform;
-			// FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
-			// StationTransform.SetLocation(Loc - (RightVec * 300.0f));
-			// StationTransform.SetScale3D(FVector(0.5f, 5.0f, 0.2f)); 
-			// StationTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
-			// SkyscraperISM->AddInstance(StationTransform);
+			// Use skyscraper ISM as platform proxy at small scale until real asset is available
+			FVector Right = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+			FTransform StTr;
+			StTr.SetLocation(Loc + Right * 1200.0f);
+			StTr.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
+			StTr.SetScale3D(FVector(3.0f, 8.0f, 0.1f)); // flat platform slab
+			SkyscraperISM->AddInstance(StTr);
 		}
-	}
-
-	// --- Overbridges & Level Crossings ---
-	// Roughly every 15 miles (StartDist % 2400000 == 0), spawn an intersecting road crossing
-	float CrossingFmod = FMath::Fmod(StartDist, 2400000.0f);
-	if (StartDist > 100.0f && (CrossingFmod < 100.0f || CrossingFmod > 2400000.0f - 100.0f))
-	{
-		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
-		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
-		
-		// Phase 13: Level Crossings and AI Boom Gates
-		FTransform GateTransformL;
-		GateTransformL.SetLocation(Loc - (RightVec * 800.0f));
-		GateTransformL.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
-		GateTransformL.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
-
-		FTransform GateTransformR;
-		GateTransformR.SetLocation(Loc + (RightVec * 800.0f));
-		GateTransformR.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
-		GateTransformR.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
-		
-		// In full build, this hooks up to AITrainController to rotate the gates 90 degrees when train approaches
-		// BoomGateISM->AddInstance(GateTransformL);
-		// BoomGateISM->AddInstance(GateTransformR);
-		
-		// Skyscraper proxy overbridge disabled due to massive scale
-		// FTransform BridgeTransform;
-		// Loc.Z += 2000.0f;
-		// BridgeTransform.SetLocation(Loc);
-		// BridgeTransform.SetScale3D(FVector(5.0f, 0.5f, 0.2f));
-		// FRotator SplineRot = Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
-		// SplineRot.Yaw += 90.0f;
-		// BridgeTransform.SetRotation(SplineRot.Quaternion());
-		// SkyscraperISM->AddInstance(BridgeTransform);
 	}
 }

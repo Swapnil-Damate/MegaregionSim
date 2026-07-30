@@ -1,5 +1,6 @@
 #include "TrainPawn.h"
 #include "TrainCar.h"
+#include "TrainSimHUD.h"
 #include "Math/UnrealMathUtility.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -111,7 +112,7 @@ ATrainPawn::ATrainPawn()
 
 	// Default mass variables (physics now driven by LocoBody)
 	MassInTons = 10.0f;
-	MaxTractiveEffort = 5000000.0f; // 5 Million Newtons (Scaled down to prevent Chaos solver failure, but strong enough to rocket forward)
+	MaxTractiveEffort = 5000000.0f; // 5 MN tractive effort
 	
 	// Default pressures in PSI (standard US freight brake setup)
 	BrakePipePressure = 90.0f;
@@ -119,9 +120,9 @@ ATrainPawn::ATrainPawn()
 	BrakeCylinderPressure = 0.0f;
 	
 	TargetBrakePipePressure = 90.0f;
-	BrakeExhaustRate = 5.0f; // Drops 5 PSI per second
-	BrakeChargeRate = 3.0f;  // Charges 3 PSI per second
-	MaxBrakeForce = 25000.0f; // Scaled down brake force
+	BrakeExhaustRate = 5.0f;
+	BrakeChargeRate = 3.0f;
+	MaxBrakeForce = 8000000.0f; // 8 MN braking force — proportional to 5MN traction
 	
 	CurrentThrottleNotch = 0.0f;
 	CurrentThrust = 0.0f;
@@ -156,18 +157,8 @@ void ATrainPawn::BeginPlay()
 	BrakeCylinderPressure = 0.0f;	// 0 psi
 	TargetBrakePipePressure = 90.0f;
 
-	// Note: Camera possession is now perfectly handled natively by MegaregionGameMode.
-	
-	// Initialize UI Widget automatically using the pure C++ class
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		HUDWidgetInstance = CreateWidget<UTrainHUDWidget>(PlayerController, UTrainHUDWidget::StaticClass());
-		if (HUDWidgetInstance)
-		{
-			HUDWidgetInstance->AddToViewport();
-			HUDWidgetInstance->SetTrainPawn(this);
-		}
-	}
+	// HUD is now a pure C++ ATrainSimHUD registered via GameMode — no UMG widget needed
+	// The HUD auto-creates via PlayerController. We just need to push data each tick.
 
 	// Phase 5: Spawn the 8-car Freight Consist — DEFERRED by 0.1 seconds
 	// This guarantees InfiniteWorldGenerator::BeginPlay() has already run and
@@ -335,62 +326,42 @@ void ATrainPawn::Tick(float DeltaTime)
 		}
 	}
 
-	// Update HUD if it exists (Throttled to 10 FPS to prevent Web Browser from hanging the engine)
-	if (HUDWidgetInstance)
+	// Push data to the pure C++ Slate HUD every 0.1s
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		TimeSinceLastHUDUpdate += DeltaTime;
 		if (TimeSinceLastHUDUpdate >= 0.1f)
 		{
-			// Fetch Economy Balance & Contract
-			UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>();
-			int32 Wallet = 0;
-			FString ContractStr = TEXT("No Contract");
-			
-			if (EconomySystem)
+			TimeSinceLastHUDUpdate = 0.0f;
+			if (ATrainSimHUD* SimHUD = Cast<ATrainSimHUD>(PC->GetHUD()))
 			{
-				Wallet = EconomySystem->GetPlayerBalance();
-				ContractStr = EconomySystem->GetActiveContractDetails();
-			}
-			
-			if (HUDWidgetInstance)
-			{
+				UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>();
+				int32 Wallet = EconomySystem ? EconomySystem->GetPlayerBalance() : 0;
 				bool bHeadlightsOn = Headlight ? Headlight->IsVisible() : false;
-				FString NextSignal = TEXT("GREEN"); 
-				FString UpcomingEvent = TEXT("Clear"); 
-				
-				// Phase 14: Dynamic Signals (Raycast proxy)
-				FHitResult HitResult;
-				FVector Start = GetActorLocation();
-				FVector End = Start + (GetActorForwardVector() * 20000.0f); // 200m ahead
-				FCollisionQueryParams Params;
-				Params.AddIgnoredActor(this);
-				
-				if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
+				FString SignalState = TEXT("GREEN");
+
+				// Quick raycast to detect signals ahead
+				FHitResult Hit;
+				FVector TraceStart = GetActorLocation();
+				FVector TraceEnd   = TraceStart + GetActorForwardVector() * 20000.0f;
+				FCollisionQueryParams QParams;
+				QParams.AddIgnoredActor(this);
+				if (GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, QParams))
 				{
-					if (HitResult.GetActor() && HitResult.GetActor()->GetName().Contains("Signal"))
-					{
-						NextSignal = TEXT("RED"); // Basic proxy
-					}
-					else if (HitResult.GetActor() && HitResult.GetActor()->GetName().Contains("Crossing"))
-					{
-						UpcomingEvent = TEXT("Crossing Ahead!");
-					}
+					if (Hit.GetActor() && Hit.GetActor()->GetName().Contains(TEXT("Signal")))
+						SignalState = TEXT("RED");
 				}
-				
-				HUDWidgetInstance->UpdateHUDMetrics(
-					GetVelocity().Size() * 0.036f, 
-					BrakePipePressure, 
-					TargetBrakePipePressure,
-					CurrentThrottleNotch, 
-					Wallet, 
-					ContractStr,
-					100.0f,
-					UpcomingEvent,
-					bHeadlightsOn,
-					NextSignal
+
+				SimHUD->UpdateData(
+					GetVelocity().Size() * 0.036f,
+					CurrentThrottleNotch,
+					BrakePipePressure,
+					BrakeCylinderPressure,
+					Wallet,
+					SignalState,
+					bHeadlightsOn
 				);
 			}
-			TimeSinceLastHUDUpdate = 0.0f;
 		}
 	}
 	

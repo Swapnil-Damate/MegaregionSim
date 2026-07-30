@@ -36,11 +36,30 @@ void AInfiniteWorldGenerator::BeginPlay()
 		ChunkLength = 100000.0f; 
 	}
 
-	// Generate initial spline points
-	GenerateSplineAhead(ChunkLength * GenerationDistance);
+	// Widen default lookahead to 5 chunks (5km)
+	GenerationDistance = 5;
+
+	// Generate initial spline far ahead so all startup chunks have valid points
+	GenerateSplineAhead(ChunkLength * (GenerationDistance + 2));
 	
-	// Force generate physical chunks instantly so the train doesn't fall into the void
-	ManageChunks();
+	// Force generate the first 6 chunks synchronously so the train NEVER falls into the void.
+	// ManageChunks() only generates chunks near the player, but the player starts at X=20000
+	// which is in chunk index 0. We pre-warm chunks 0..5 here.
+	for (int32 i = 0; i <= GenerationDistance; i++)
+	{
+		if (!ActiveChunks.Contains(i))
+		{
+			FActorSpawnParameters SpawnParams;
+			AWorldChunk* NewChunk = GetWorld()->SpawnActor<AWorldChunk>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+			if (NewChunk)
+			{
+				float ChunkStart = i * ChunkLength;
+				float ChunkEnd   = (i + 1) * ChunkLength;
+				NewChunk->InitializeChunk(this, MainTrackSpline, ChunkStart, ChunkEnd);
+				ActiveChunks.Add(i, NewChunk);
+			}
+		}
+	}
 }
 
 void AInfiniteWorldGenerator::Tick(float DeltaTime)
