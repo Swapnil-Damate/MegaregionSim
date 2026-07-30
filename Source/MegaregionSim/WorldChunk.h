@@ -33,6 +33,9 @@ protected:
 	UInstancedStaticMeshComponent* TunnelISM;
 
 	UPROPERTY()
+	UInstancedStaticMeshComponent* BridgeISM;
+
+	UPROPERTY()
 	UInstancedStaticMeshComponent* TrackMeshISM;
 	
 	UPROPERTY()

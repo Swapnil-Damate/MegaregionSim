@@ -20,6 +20,37 @@ AInfiniteWorldGenerator::AInfiniteWorldGenerator()
 	MainTrackSpline->AddSplinePoint(FVector(1000,0,0), ESplineCoordinateSpace::World); // Initial direction
 }
 
+static float GetGroundHeightAtLocation(UWorld* World, float X, float Y, float DefaultZ)
+{
+	if (!World) return DefaultZ;
+
+	FVector TraceStart(X, Y, 50000.0f);
+	FVector TraceEnd(X, Y, -20000.0f);
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.bTraceComplex = false;
+
+	if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic, Params))
+	{
+		AActor* HitActor = HitResult.GetActor();
+		if (HitActor && (HitActor->GetName().Contains(TEXT("Track")) || HitActor->GetName().Contains(TEXT("Train")) || HitActor->GetName().Contains(TEXT("Car"))))
+		{
+			FCollisionQueryParams RefinedParams;
+			RefinedParams.AddIgnoredActor(HitActor);
+			if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic, RefinedParams))
+			{
+				return HitResult.Location.Z;
+			}
+		}
+		else
+		{
+			return HitResult.Location.Z;
+		}
+	}
+	return DefaultZ;
+}
+
 void AInfiniteWorldGenerator::BeginPlay()
 {
 	Super::BeginPlay();
@@ -30,6 +61,23 @@ void AInfiniteWorldGenerator::BeginPlay()
 		TrackedPlayer = PC->GetPawn();
 	}
 
+	// Clean up any default template floor actor at the origin that blocks the track/landscape
+	TArray<AActor*> FoundStaticMeshActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), FoundStaticMeshActors);
+	for (AActor* Actor : FoundStaticMeshActors)
+	{
+		if (Actor && (Actor->GetName().Contains(TEXT("Floor")) || Actor->GetName().Contains(TEXT("Plane")) || Actor->GetName().Contains(TEXT("Grid")) || FMath::Abs(Actor->GetActorLocation().Z) < 50.0f))
+		{
+			// Check if it's a huge flat floor
+			FVector ActorScale = Actor->GetActorScale3D();
+			if (ActorScale.X > 5.0f && ActorScale.Y > 5.0f && ActorScale.Z < 0.5f)
+			{
+				Actor->Destroy();
+				UE_LOG(LogTemp, Warning, TEXT("Destroyed default template floor actor: %s"), *Actor->GetName());
+			}
+		}
+	}
+
 	// Initialize essential chunk math before anything generates
 	if (ChunkLength <= 0.0f)
 	{
@@ -38,6 +86,9 @@ void AInfiniteWorldGenerator::BeginPlay()
 
 	// Widen default lookahead to 5 chunks (5km)
 	GenerationDistance = 5;
+
+	// Query starting ground height
+	LastSplineZ = GetGroundHeightAtLocation(GetWorld(), 0.0f, 0.0f, 0.0f);
 
 	// Generate initial spline far ahead so all startup chunks have valid points
 	GenerateSplineAhead(ChunkLength * (GenerationDistance + 2));
@@ -87,8 +138,16 @@ void AInfiniteWorldGenerator::GenerateSplineAhead(float TargetDistance)
 		// Force spline to be perfectly dead-straight to prevent automatic tangent loops and crossing
 		float CurveY = 0.0f; // No lateral noise!
 		
-		// Elevation math (perfectly flat for now to fix flying tracks)
-		float CurveZ = 0.0f; // Force flat ground!
+		// Use raycasting to find the landscape height at this coordinate!
+		float TargetZ = GetGroundHeightAtLocation(GetWorld(), LastSplineGenerationDistance, CurveY, 0.0f);
+		
+		// Smooth out height transitions to mimic grading (Max 1.5m vertical change per 50m segment - 3% grade)
+		float MaxDeltaZ = 150.0f;
+		float TargetDeltaZ = TargetZ - LastSplineZ;
+		TargetDeltaZ = FMath::Clamp(TargetDeltaZ, -MaxDeltaZ, MaxDeltaZ);
+		
+		float CurveZ = LastSplineZ + TargetDeltaZ;
+		LastSplineZ = CurveZ;
 		
 		FVector NewPoint(LastSplineGenerationDistance, CurveY, CurveZ);
 		MainTrackSpline->AddSplinePoint(NewPoint, ESplineCoordinateSpace::World, true);

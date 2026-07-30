@@ -39,6 +39,11 @@ AWorldChunk::AWorldChunk()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> TunnelAsset(TEXT("StaticMesh'/Game/FinalAssets/Tunnel_Mesh.Tunnel_Mesh'"));
 	if (TunnelAsset.Succeeded()) TunnelISM->SetStaticMesh(TunnelAsset.Object);
 
+	BridgeISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("BridgeISM"));
+	BridgeISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> BridgeAsset(TEXT("StaticMesh'/Game/FinalAssets/Bridge_Mesh.Bridge_Mesh'"));
+	if (BridgeAsset.Succeeded()) BridgeISM->SetStaticMesh(BridgeAsset.Object);
+
 	SignalISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SignalISM"));
 	SignalISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Modern_LED_Signal.Modern_LED_Signal'"));
@@ -49,6 +54,37 @@ void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineCom
 {
 	GenerateTerrainInstances(InSpline, StartDistance, EndDistance);
 	GenerateTrackSplineMeshes(InSpline, StartDistance, EndDistance);
+}
+
+static float GetGroundHeightAtLocation(UWorld* World, float X, float Y, float DefaultZ)
+{
+	if (!World) return DefaultZ;
+
+	FVector TraceStart(X, Y, 50000.0f);
+	FVector TraceEnd(X, Y, -20000.0f);
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.bTraceComplex = false;
+
+	if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic, Params))
+	{
+		AActor* HitActor = HitResult.GetActor();
+		if (HitActor && (HitActor->GetName().Contains(TEXT("Track")) || HitActor->GetName().Contains(TEXT("Train")) || HitActor->GetName().Contains(TEXT("Car"))))
+		{
+			FCollisionQueryParams RefinedParams;
+			RefinedParams.AddIgnoredActor(HitActor);
+			if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic, RefinedParams))
+			{
+				return HitResult.Location.Z;
+			}
+		}
+		else
+		{
+			return HitResult.Location.Z;
+		}
+	}
+	return DefaultZ;
 }
 
 void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist)
@@ -74,9 +110,9 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 
 			FVector SpawnXY = SplineLoc + (SplineRight * Offset);
 
-			// Apply full Perlin height so vegetation sits on hills and valleys
-			float TerrainZ = FMath::PerlinNoise2D(FVector2D(SpawnXY.X * NoiseScale, SpawnXY.Y * NoiseScale)) * 12000.0f;
-			FVector SpawnLoc(SpawnXY.X, SpawnXY.Y, TerrainZ);
+			// Find exact ground Z from landscape collision
+			float GroundZ = GetGroundHeightAtLocation(GetWorld(), SpawnXY.X, SpawnXY.Y, SplineLoc.Z);
+			FVector SpawnLoc(SpawnXY.X, SpawnXY.Y, GroundZ);
 
 			FTransform T;
 			T.SetLocation(SpawnLoc);
@@ -99,7 +135,7 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 				{
 					float GX = SpawnLoc.X + FMath::RandRange(-1500.0f, 1500.0f);
 					float GY = SpawnLoc.Y + FMath::RandRange(-1500.0f, 1500.0f);
-					float GZ = FMath::PerlinNoise2D(FVector2D(GX * NoiseScale, GY * NoiseScale)) * 12000.0f;
+					float GZ = GetGroundHeightAtLocation(GetWorld(), GX, GY, SpawnLoc.Z);
 
 					FTransform GT;
 					GT.SetLocation(FVector(GX, GY, GZ));
@@ -110,7 +146,7 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 			}
 			else if (bUrban)
 			{
-				// ── Skyscrapers with random height ────────────────────────────
+				// Skyscrapers on exact ground height
 				T.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 6.0f)));
 				T.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0)));
 				SkyscraperISM->AddInstance(T);
@@ -172,6 +208,47 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		T4.SetRotation(StartRot.Quaternion());
 		T4.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
 		TrackMeshISM->AddInstance(T4);
+
+		// ── Main Track Bridge/Tunnel ──────────────────────────────────────────
+		float GroundZ1 = GetGroundHeightAtLocation(GetWorld(), StartLoc.X, StartLoc.Y, StartLoc.Z);
+		float ZDiff1 = StartLoc.Z - GroundZ1;
+		if (ZDiff1 > 500.0f)
+		{
+			FTransform BridgeTransform;
+			BridgeTransform.SetLocation(StartLoc);
+			BridgeTransform.SetRotation(StartRot.Quaternion());
+			BridgeTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			BridgeISM->AddInstance(BridgeTransform);
+		}
+		else if (ZDiff1 < -500.0f)
+		{
+			FTransform TunnelTransform;
+			TunnelTransform.SetLocation(StartLoc);
+			TunnelTransform.SetRotation(StartRot.Quaternion());
+			TunnelTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			TunnelISM->AddInstance(TunnelTransform);
+		}
+
+		// ── Parallel Track Bridge/Tunnel ──────────────────────────────────────
+		FVector ParallelLoc = StartLoc + (RightVec * 3500.0f);
+		float GroundZ2 = GetGroundHeightAtLocation(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
+		float ZDiff2 = ParallelLoc.Z - GroundZ2;
+		if (ZDiff2 > 500.0f)
+		{
+			FTransform BridgeTransform;
+			BridgeTransform.SetLocation(ParallelLoc);
+			BridgeTransform.SetRotation(StartRot.Quaternion());
+			BridgeTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			BridgeISM->AddInstance(BridgeTransform);
+		}
+		else if (ZDiff2 < -500.0f)
+		{
+			FTransform TunnelTransform;
+			TunnelTransform.SetLocation(ParallelLoc);
+			TunnelTransform.SetRotation(StartRot.Quaternion());
+			TunnelTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			TunnelISM->AddInstance(TunnelTransform);
+		}
 
 		// ── Signal every 2km via a real ARailwaySignal actor ─────────────────
 		if (GetWorld() && FMath::Fmod(Dist, 200000.0f) < TrackSegLen * 0.5f)

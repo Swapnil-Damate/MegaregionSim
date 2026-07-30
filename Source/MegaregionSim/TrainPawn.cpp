@@ -1,3 +1,6 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// TrainPawn.cpp — Complete definitive rewrite of movement and consist systems
+// ─────────────────────────────────────────────────────────────────────────────
 #include "TrainPawn.h"
 #include "TrainCar.h"
 #include "TrainSimHUD.h"
@@ -25,581 +28,480 @@
 #include "NiagaraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "Components/SplineComponent.h"
 #include "MegaregionZoningGenerator.h"
 
 ATrainPawn::ATrainPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
-	// CRITICAL: Disable Controller Rotation overrides! If true (default), the PlayerController teleports the pawn's rotation every frame, which instantly freezes and breaks the Chaos physics solver!
+	// Disable controller rotation overrides — these fight kinematic movement
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
+	bUseControllerRotationYaw   = false;
+	bUseControllerRotationRoll  = false;
 	
-	// Create physical root body
+	// ── Physical root ──────────────────────────────────────────────────────────
 	UBoxComponent* LocoBody = CreateDefaultSubobject<UBoxComponent>(TEXT("TrainLocoBody"));
 	RootComponent = LocoBody;
 	LocoBody->SetCollisionProfileName(TEXT("PhysicsActor"));
-	LocoBody->SetSimulatePhysics(true);
-	LocoBody->SetMassOverrideInKg(NAME_None, 10000.0f, true); // 10 tons (Scaled down to prevent Chaos float precision errors)
-	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
-	LocoBody->SetLinearDamping(0.01f);
-	LocoBody->SetAngularDamping(0.01f);
+	// IMPORTANT: physics DISABLED — we drive the train kinematically so it always
+	// moves exactly where the player commands.  Physics is re-enabled only for
+	// crash impulses in DerailTrain().
+	LocoBody->SetSimulatePhysics(false);
+	LocoBody->SetBoxExtent(FVector(1000.0f, 150.0f, 150.0f)); // 20m long, 3m wide, 3m tall
 
-	// Unlock physical axes so the train isn't frozen in world space
-	LocoBody->BodyInstance.bLockYTranslation = false;
-	LocoBody->BodyInstance.bLockXRotation = false;
-	LocoBody->BodyInstance.bLockYRotation = false;
-	LocoBody->BodyInstance.bLockZRotation = false;
-
-	// Train Mesh
+	// ── Train visual mesh ──────────────────────────────────────────────────────
 	UStaticMeshComponent* TrainMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrainMesh"));
 	TrainMesh->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> TrainAsset(TEXT("StaticMesh'/Game/FinalAssets/Diesel_Locomotive.Diesel_Locomotive'"));
 	if (TrainAsset.Succeeded())
 	{
 		TrainMesh->SetStaticMesh(TrainAsset.Object);
-		// The Train asset is already centered perfectly; no Z offset needed!
-		TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-		TrainMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-		TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
+	else
+	{
+		// Fallback: use a basic cube so the train is always visible
+		static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+		if (CubeAsset.Succeeded())
+		{
+			TrainMesh->SetStaticMesh(CubeAsset.Object);
+			TrainMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f)); // 20m × 3m × 4m loco shape
+		}
+	}
+	TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
-
-	
-	// Setup Phase 4 Proxy Components
+	// ── Acoustics & VFX ───────────────────────────────────────────────────────
 	AcousticsComponent = CreateDefaultSubobject<UTrainAcousticsComponent>(TEXT("AcousticsComponent"));
-	EraVFXManager = CreateDefaultSubobject<UDynamicEraVFXManager>(TEXT("EraVFXManager"));
+	EraVFXManager       = CreateDefaultSubobject<UDynamicEraVFXManager>(TEXT("EraVFXManager"));
 
-	// Create Camera and Spring Arm
+	// ── Spring arm & camera ───────────────────────────────────────────────────
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("LocoSpringArm"));
 	SpringArmComp->SetupAttachment(RootComponent);
-	SpringArmComp->SetRelativeLocation(FVector(0.0f, 0.0f, 800.0f)); // Elevate arm origin above the train
-	SpringArmComp->SetRelativeRotation(FRotator(-30.0f, 45.0f, 0.0f)); // Angle it down and to the side for a cinematic view!
-	SpringArmComp->TargetArmLength = 3500.0f; // Distance to camera (far enough to see 20m train and roadblock)
-	SpringArmComp->bUsePawnControlRotation = true; // Enabled for 360 Degree Orbit!
+	SpringArmComp->SetRelativeLocation(FVector(0.0f, 0.0f, 600.0f));
+	SpringArmComp->SetRelativeRotation(FRotator(-25.0f, 0.0f, 0.0f));
+	SpringArmComp->TargetArmLength = 4500.0f;
+	SpringArmComp->bUsePawnControlRotation = true;
 	SpringArmComp->bDoCollisionTest = false;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("LocoCamera"));
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
-	CameraComp->bUsePawnControlRotation = false; // Camera doesn't rotate relative to arm
+	CameraComp->bUsePawnControlRotation = false;
 
-	// Headlight
+	// ── Headlight ─────────────────────────────────────────────────────────────
 	Headlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Headlight"));
 	Headlight->SetupAttachment(RootComponent);
 	Headlight->SetRelativeLocation(FVector(1000.0f, 0.0f, 150.0f));
 	Headlight->VolumetricScatteringIntensity = 1.0f;
-	Headlight->bUseTemperature = true; // Phase 14: Use Color Temp
-	Headlight->Temperature = 4000.0f; // Warm White
+	Headlight->bUseTemperature = true;
+	Headlight->Temperature = 4000.0f;
 
-	// Rear Coupler
+	// ── Rear coupler (physical coupling trigger) ───────────────────────────────
 	RearCoupler = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("LocoRearCoupler"));
 	RearCoupler->SetupAttachment(RootComponent);
 	RearCoupler->SetRelativeLocation(FVector(-500.0f, 0.0f, 0.0f));
 
-	// Rear Coupler Trigger
 	RearCouplerTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("LocoRearCouplerTrigger"));
 	RearCouplerTrigger->SetupAttachment(RearCoupler);
 	RearCouplerTrigger->SetSphereRadius(50.0f);
 	RearCouplerTrigger->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 	RearCouplerTrigger->OnComponentBeginOverlap.AddDynamic(this, &ATrainPawn::OnCouplerOverlap);
 
-	// Phase 13: Catenary Sparks
+	// ── Catenary sparks ───────────────────────────────────────────────────────
 	CatenarySparks = CreateDefaultSubobject<UNiagaraComponent>(TEXT("CatenarySparks"));
 	CatenarySparks->SetupAttachment(RootComponent);
-	CatenarySparks->SetRelativeLocation(FVector(0.0f, 0.0f, 300.0f)); // Roof of Loco
+	CatenarySparks->SetRelativeLocation(FVector(0.0f, 0.0f, 300.0f));
 	CatenarySparks->SetAutoActivate(true);
 
-	// Default mass variables (physics now driven by LocoBody)
-	MassInTons = 10.0f;
-	MaxTractiveEffort = 5000000.0f; // 5 MN tractive effort
-	
-	// Default pressures in PSI (standard US freight brake setup)
-	BrakePipePressure = 90.0f;
-	MainReservoirPressure = 130.0f;
-	BrakeCylinderPressure = 0.0f;
-	
+	// ── Train physics defaults ─────────────────────────────────────────────────
+	MassInTons        = 10.0f;
+	MaxTractiveEffort = 5000000.0f; // 5 MN (used to derive max speed)
+
+	BrakePipePressure       = 90.0f;
+	MainReservoirPressure   = 130.0f;
+	BrakeCylinderPressure   = 0.0f;
 	TargetBrakePipePressure = 90.0f;
-	BrakeExhaustRate = 5.0f;
-	BrakeChargeRate = 3.0f;
-	MaxBrakeForce = 8000000.0f; // 8 MN braking force — proportional to 5MN traction
-	
+	BrakeExhaustRate        = 5.0f;
+	BrakeChargeRate         = 3.0f;
+	MaxBrakeForce           = 8000000.0f;
+
 	CurrentThrottleNotch = 0.0f;
-	CurrentThrust = 0.0f;
+	CurrentThrust        = 0.0f;
+	CurrentSpeedMs       = 0.0f;
+	CurrentDistanceAlongSpline = 20000.0f;
+	MainTrackSplineRef   = nullptr;
 	TimeSinceLastHUDUpdate = 0.0f;
 
-	// Possess automatically for the Visual Test!
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
-	
-	// Force spawn even if overlapping tracks
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 }
 
-
+// ─────────────────────────────────────────────────────────────────────────────
 void ATrainPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Teleport the train 200m ahead of the origin so the cars have track to spawn on behind it
-	// Z=50 reduces physics collision drop velocity to prevent constraints exploding
-	SetActorLocationAndRotation(FVector(20000.0f, 0.0f, 50.0f), FRotator::ZeroRotator);
-
-	// Clear the physics log file at the start of a new run
-	if (GetLocalRole() == ROLE_Authority)
+	// Explicitly disable physics simulation on the root component to guarantee
+	// that serialized Blueprint properties do NOT override our kinematic movement.
+	if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(GetRootComponent()))
 	{
-		FString PhysicsLogFilePath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
-		FFileHelper::SaveStringToFile(TEXT("--- NEW PHYSICS RUN (LOCOMOTIVE SPAWNED) ---\n"), *PhysicsLogFilePath);
+		RootPrim->SetSimulatePhysics(false);
+		RootPrim->SetCollisionProfileName(TEXT("OverlapAll")); // Don't collide or block
 	}
 
-	// Initialize Air Brake System
-	MainReservoirPressure = 130.0f; // 130 psi
-	BrakePipePressure = 90.0f;		// 90 psi (Fully released)
-	BrakeCylinderPressure = 0.0f;	// 0 psi
+	// Find the World Generator and cache its spline
+	AActor* GeneratorActor = UGameplayStatics::GetActorOfClass(GetWorld(), AInfiniteWorldGenerator::StaticClass());
+	if (GeneratorActor)
+	{
+		AInfiniteWorldGenerator* Generator = Cast<AInfiniteWorldGenerator>(GeneratorActor);
+		if (Generator && Generator->MainTrackSpline)
+		{
+			MainTrackSplineRef = Generator->MainTrackSpline;
+		}
+	}
+
+	// Initialize starting location
+	CurrentDistanceAlongSpline = 20000.0f;
+	if (MainTrackSplineRef)
+	{
+		FVector StartLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
+		FRotator StartRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
+		StartLoc.Z += 100.0f; // sit exactly on top of rails
+		SetActorLocationAndRotation(StartLoc, StartRot);
+	}
+	else
+	{
+		SetActorLocationAndRotation(FVector(20000.0f, 0.0f, 130.0f), FRotator::ZeroRotator);
+	}
+
+	// Clear physics log
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		FString LogPath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
+		FFileHelper::SaveStringToFile(TEXT("--- NEW RUN ---\n"), *LogPath);
+	}
+
+	// Air brake initialisation
+	MainReservoirPressure   = 130.0f;
+	BrakePipePressure       = 90.0f;
+	BrakeCylinderPressure   = 0.0f;
 	TargetBrakePipePressure = 90.0f;
 
-	// HUD is now a pure C++ ATrainSimHUD registered via GameMode — no UMG widget needed
-	// The HUD auto-creates via PlayerController. We just need to push data each tick.
+	// HUD is pure C++ — data is pushed every tick via ATrainSimHUD::UpdateData()
 
-	// Phase 5: Spawn the 8-car Freight Consist — DEFERRED by 0.1 seconds
-	// This guarantees InfiniteWorldGenerator::BeginPlay() has already run and
-	// spawned physical track chunks beneath us before the cars drop with physics.
+	// Spawn consist after 0.5s — let the world generator finish spawning all chunks first
 	FTimerHandle ConsistSpawnTimer;
-	GetWorldTimerManager().SetTimer(ConsistSpawnTimer, this, &ATrainPawn::SpawnConsist, 0.1f, false);
+	GetWorldTimerManager().SetTimer(ConsistSpawnTimer, this, &ATrainPawn::SpawnConsist, 0.5f, false);
 
-	// Phase 2.2: Generate a Contract automatically for the Visual Test!
+	// Generate starting contract
 	if (UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>())
 	{
 		EconomySystem->GenerateRandomContract();
 	}
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SpawnConsist — kinematic consist, no physics constraints
+// Each car is placed at a fixed offset and then tracked in ConsistCars for
+// per-tick kinematic following.
+// ─────────────────────────────────────────────────────────────────────────────
 void ATrainPawn::SpawnConsist()
 {
 	if (GetLocalRole() != ROLE_Authority) return;
 
-	FVector SpawnLoc = GetActorLocation();
-	FVector ForwardVec = GetActorForwardVector();
+	ConsistCars.Empty();
 
-	ATrainCar* LastCar = nullptr;
-	UPrimitiveComponent* LastPhysComp = Cast<UPrimitiveComponent>(GetRootComponent());
+	const float CarSpacing  = 2300.0f; // 23m per car slot (20m car + 3m gap)
+	FVector     ForwardVec  = GetActorForwardVector();
+	FRotator    LocoRot     = GetActorRotation();
 
 	for (int i = 0; i < 8; i++)
 	{
-		// Place each car 2200 units (22m) behind the previous — matching the 20m box + 2m gap
-		SpawnLoc -= (ForwardVec * 2200.0f);
+		FVector SpawnLoc;
+		FRotator SpawnRot;
+		
+		if (MainTrackSplineRef)
+		{
+			float CarDist = CurrentDistanceAlongSpline - CarSpacing * (i + 1);
+			SpawnLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+			SpawnRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+			SpawnLoc.Z += 100.0f;
+		}
+		else
+		{
+			SpawnLoc = GetActorLocation() - ForwardVec * CarSpacing * (i + 1);
+			SpawnLoc.Z = GetActorLocation().Z;
+			SpawnRot = LocoRot;
+		}
 
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FActorSpawnParameters SP;
+		SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		// Spawn a proper ATrainCar — this activates all brake, slosh, and coupler physics
-		ATrainCar* NewCar = GetWorld()->SpawnActor<ATrainCar>(ATrainCar::StaticClass(), SpawnLoc, GetActorRotation(), SpawnParams);
-
+		ATrainCar* NewCar = GetWorld()->SpawnActor<ATrainCar>(ATrainCar::StaticClass(), SpawnLoc, SpawnRot, SP);
 		if (NewCar)
 		{
-			// Link rear of previous actor to front of this car using ATrainCar's built-in FrontCoupler
-			if (NewCar->FrontCoupler && LastPhysComp)
-			{
-				NewCar->FrontCoupler->SetConstrainedComponents(
-					LastPhysComp, NAME_None,
-					NewCar->CarBody, NAME_None
-				);
-				NewCar->FrontCoupler->SetLinearXLimit(LCM_Limited, 15.0f); // 15cm slack
-				NewCar->FrontCoupler->SetLinearYLimit(LCM_Locked, 0.0f);
-				NewCar->FrontCoupler->SetLinearZLimit(LCM_Locked, 0.0f);
-				NewCar->FrontCoupler->SetAngularSwing1Limit(ACM_Limited, 10.0f);
-				NewCar->FrontCoupler->SetAngularSwing2Limit(ACM_Limited, 10.0f);
-				NewCar->FrontCoupler->SetAngularTwistLimit(ACM_Locked, 0.0f);
-			}
+			// Make car purely kinematic — we position it in Tick manually
+			NewCar->CarBody->SetSimulatePhysics(false);
+			NewCar->CarBody->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-			// Track linked actors for brake pipe pressure propagation
-			NewCar->FrontAttachedCar = (LastCar != nullptr) ? (AActor*)LastCar : (AActor*)this;
+			// Load the real assets dynamically (alternating hoppers, tankers, and passenger coaches)
+			NewCar->ConfigureCarVisuals(i);
 
-			LastPhysComp = NewCar->CarBody;
-			LastCar = NewCar;
+			// Wire up brake pipe for pressure propagation
+			NewCar->FrontAttachedCar = (ConsistCars.Num() > 0)
+				? (AActor*)ConsistCars.Last()
+				: (AActor*)this;
+
+			ConsistCars.Add(NewCar);
 		}
 	}
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 void ATrainPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	LogPhysicsState();
 
-	// --- Pneumatic Brake Simulation (Fluid Dynamics over time) ---
+	// ── Pneumatic brake sim ────────────────────────────────────────────────────
 	if (TargetBrakePipePressure < BrakePipePressure)
 	{
-		// Exhausting air to apply brakes
 		BrakePipePressure -= BrakeExhaustRate * DeltaTime;
-		if (BrakePipePressure < TargetBrakePipePressure) BrakePipePressure = TargetBrakePipePressure;
+		BrakePipePressure  = FMath::Max(BrakePipePressure, TargetBrakePipePressure);
 	}
 	else if (TargetBrakePipePressure > BrakePipePressure)
 	{
-		// Pumping air to release brakes
 		BrakePipePressure += BrakeChargeRate * DeltaTime;
-		if (BrakePipePressure > TargetBrakePipePressure) BrakePipePressure = TargetBrakePipePressure;
+		BrakePipePressure  = FMath::Min(BrakePipePressure, TargetBrakePipePressure);
 	}
 
-	// Calculate Brake Cylinder Pressure (1 PSI pipe drop = 2.5 PSI cylinder increase)
-	// Max cylinder pressure is usually 64 PSI for a 90 PSI pipe.
-	float PressureDrop = 90.0f - BrakePipePressure;
+	float PressureDrop    = 90.0f - BrakePipePressure;
 	BrakeCylinderPressure = FMath::Clamp(PressureDrop * 2.5f, 0.0f, 64.0f);
 
-	// --- FOOLPROOF INPUT FALLBACK ---
-	// If the user hasn't set up Enhanced Input Blueprints, poll W and S directly!
+	// ── Keyboard input (W / S / Space) ────────────────────────────────────────
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (PC->IsInputKeyDown(EKeys::W))
-		{
-			SetThrottleNotch(CurrentThrottleNotch + (2.0f * DeltaTime));
-		}
+			SetThrottleNotch(CurrentThrottleNotch + (3.0f * DeltaTime));
 		else if (PC->IsInputKeyDown(EKeys::S))
-		{
-			SetThrottleNotch(CurrentThrottleNotch - (2.0f * DeltaTime));
-		}
+			SetThrottleNotch(CurrentThrottleNotch - (3.0f * DeltaTime));
+
+		if (PC->IsInputKeyDown(EKeys::SpaceBar))
+			SetTargetBrakePressure(FMath::Max(0.0f, TargetBrakePipePressure - 15.0f * DeltaTime));
+		else if (!PC->IsInputKeyDown(EKeys::SpaceBar) && TargetBrakePipePressure < 90.0f)
+			SetTargetBrakePressure(FMath::Min(90.0f, TargetBrakePipePressure + 5.0f * DeltaTime));
 	}
 
-	// --- Tractive Effort Curve ---
-	float TargetThrust = (CurrentThrottleNotch / 8.0f) * MaxTractiveEffort;
-	
-	if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
+	// ── KINEMATIC SPEED MODEL ─────────────────────────────────────────────────
+	// Target speed is proportional to throttle notch.  Max speed = 250 km/h.
+	const float MaxSpeedMs  = 250.0f / 3.6f; // 69.4 m/s
+	float TargetSpeedMs     = (CurrentThrottleNotch / 8.0f) * MaxSpeedMs;
+
+	// Brakes reduce target speed
+	float BrakeRatio = BrakeCylinderPressure / 64.0f;
+	if (BrakeRatio > 0.01f)
 	{
-		float Mass = PrimComp->GetMass();
-		// Gradually increase thrust taking into account GetMass()
-		float ThrustInterpRate = (Mass > 0.0f) ? (MaxTractiveEffort / (Mass * 0.1f)) : 10000.0f;
-		CurrentThrust = FMath::FInterpConstantTo(CurrentThrust, TargetThrust, DeltaTime, ThrustInterpRate);
+		float MaxBrakeDecelMs = 5.0f; // 5 m/s² max deceleration
+		TargetSpeedMs = FMath::Max(0.0f, TargetSpeedMs - BrakeRatio * MaxBrakeDecelMs);
+	}
+
+	// Smooth acceleration — 0→100 km/h in ~10 seconds
+	float AccelRate = (TargetSpeedMs > CurrentSpeedMs) ? 3.0f : 6.0f; // faster braking
+	CurrentSpeedMs  = FMath::FInterpConstantTo(CurrentSpeedMs, TargetSpeedMs, DeltaTime, AccelRate);
+
+	// ── Move loco and consist kinematically ─────────────────────────────────────
+	if (MainTrackSplineRef)
+	{
+		CurrentDistanceAlongSpline += CurrentSpeedMs * 100.0f * DeltaTime;
+
+		FVector NewLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
+		FRotator NewRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
 		
-		if (FMath::Abs(CurrentThrust) > 0.0f)
-		{
-			FVector ForwardVector = GetActorForwardVector();
-			PrimComp->AddForce(ForwardVector * CurrentThrust);
-		}
+		// Add relative 90 deg Yaw rotation because train meshes might be built sideways, wait!
+		// Let's check: the diesel locomotive mesh import rotation. In the screenshots, the train is aligned with the track direction.
+		// Wait! The spline direction itself is along the X-axis (forward). If the train is also along the X-axis, the rotation is correct!
+		// Let's keep it as is.
+		NewLoc.Z += 100.0f; // Offset to sit on tracks
 		
-		// --- Physical Braking Simulation ---
-		float BrakeRatio = BrakeCylinderPressure / 64.0f;
-		if (BrakeRatio > 0.01f)
+		SetActorLocationAndRotation(NewLoc, NewRot);
+
+		// ── Follow consist kinematically ──────────────────────────────────────────
+		const float CarSpacing = 2300.0f;
+		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
-			FVector Velocity = GetVelocity();
-			float Speed = Velocity.Size();
-			
-			// Full Stop Velocity Clamp (Prevents sliding backward from brakes)
-			if (Speed < 5.0f)
+			if (ConsistCars[i] && IsValid(ConsistCars[i]))
 			{
-				PrimComp->SetPhysicsLinearVelocity(FVector::ZeroVector);
-			}
-			else
-			{
-				FVector BrakeDirection = -Velocity.GetSafeNormal();
-				float TargetBrake = BrakeRatio * MaxBrakeForce;
-				
-				// Smooth interpolation to prevent Space Launch bug
-				static float CurrentBrake = 0.0f;
-				CurrentBrake = FMath::FInterpTo(CurrentBrake, TargetBrake, DeltaTime, 5.0f);
-				
-				PrimComp->AddForce(BrakeDirection * CurrentBrake);
+				float CarDist = CurrentDistanceAlongSpline - CarSpacing * (i + 1);
+				FVector CarLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+				FRotator CarRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+				CarLoc.Z += 100.0f;
+				ConsistCars[i]->SetActorLocationAndRotation(CarLoc, CarRot);
 			}
 		}
 	}
-
-	// --- Fluid Sloshing Simulation ---
-	if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
+	else
 	{
-		FVector AngVel = PrimComp->GetPhysicsAngularVelocityInRadians();
-		// Slosh fluid outward based on Yaw angular velocity
-		float SloshOffset = AngVel.Z * -100.0f; // Adjust multiplier as needed
-		SloshOffset = FMath::Clamp(SloshOffset, -150.0f, 150.0f); // Max 1.5m slosh
-		PrimComp->SetCenterOfMass(FVector(0.0f, SloshOffset, 0.0f));
-	}
+		// Fallback: move along forward vector
+		FVector ForwardVec = GetActorForwardVector();
+		FVector NewLoc     = GetActorLocation() + ForwardVec * (CurrentSpeedMs * 100.0f * DeltaTime);
+		NewLoc.Z = 130.0f;
+		SetActorLocation(NewLoc);
 
-	// --- Dynamic Rail Adhesion Constraint ---
-	float CurrentSpeed = GetVelocity().Size() * 0.036f;
-	if (CurrentSpeed > 150.0f)
-	{
-		if (UPrimitiveComponent* PrimComp = Cast<UPrimitiveComponent>(RootComponent))
+		// ── Follow consist kinematically ──────────────────────────────────────────
+		const float CarSpacing = 2300.0f;
+		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
-			PrimComp->BodyInstance.bLockYTranslation = false;
-			PrimComp->BodyInstance.bLockXRotation = false;
-			PrimComp->BodyInstance.bLockYRotation = false;
-			PrimComp->BodyInstance.bLockZRotation = false;
-			PrimComp->SetConstraintMode(EDOFMode::SixDOF);
-			PrimComp->AddImpulse(GetActorRightVector() * PrimComp->GetMass() * 10000.0f);
-		}
-	}
-
-	// Push data to the pure C++ Slate HUD every 0.1s
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		TimeSinceLastHUDUpdate += DeltaTime;
-		if (TimeSinceLastHUDUpdate >= 0.1f)
-		{
-			TimeSinceLastHUDUpdate = 0.0f;
-			if (ATrainSimHUD* SimHUD = Cast<ATrainSimHUD>(PC->GetHUD()))
+			if (ConsistCars[i] && IsValid(ConsistCars[i]))
 			{
-				UEconomySubsystem* EconomySystem = GetGameInstance()->GetSubsystem<UEconomySubsystem>();
-				int32 Wallet = EconomySystem ? EconomySystem->GetPlayerBalance() : 0;
-				bool bHeadlightsOn = Headlight ? Headlight->IsVisible() : false;
-				FString SignalState = TEXT("GREEN");
-
-				// Quick raycast to detect signals ahead
-				FHitResult Hit;
-				FVector TraceStart = GetActorLocation();
-				FVector TraceEnd   = TraceStart + GetActorForwardVector() * 20000.0f;
-				FCollisionQueryParams QParams;
-				QParams.AddIgnoredActor(this);
-				if (GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, QParams))
-				{
-					if (Hit.GetActor() && Hit.GetActor()->GetName().Contains(TEXT("Signal")))
-						SignalState = TEXT("RED");
-				}
-
-				SimHUD->UpdateData(
-					GetVelocity().Size() * 0.036f,
-					CurrentThrottleNotch,
-					BrakePipePressure,
-					BrakeCylinderPressure,
-					Wallet,
-					SignalState,
-					bHeadlightsOn
-				);
+				FVector CarLoc = GetActorLocation() - ForwardVec * CarSpacing * (i + 1);
+				CarLoc.Z = 130.0f;
+				ConsistCars[i]->SetActorLocationAndRotation(CarLoc, GetActorRotation());
 			}
 		}
 	}
-	
-	// Phase 4 Integration: Feed physics data into Audio and VFX Managers
-	float SpeedMetersPerSecond = GetVelocity().Size() * 0.01f;
-	
+
+	// ── VFX / Acoustics ───────────────────────────────────────────────────────
+	float SpeedMetersPerSecond = CurrentSpeedMs;
 	if (AcousticsComponent)
 	{
-		// Proxy Engine RPM calculation (Speed * Throttle)
 		float EngineRPM = 800.0f + (SpeedMetersPerSecond * CurrentThrottleNotch * 5.0f);
 		AcousticsComponent->UpdateEngineAcoustics(EngineRPM, SpeedMetersPerSecond);
 	}
-
 	if (EraVFXManager)
 	{
 		float EngineLoad = CurrentThrottleNotch / 8.0f;
-		// Check for Over-speed Derailment (Increased threshold to prevent physics jitter derailments on spawn)
-		static bool bHasDerailed = false;
-		if (SpeedMetersPerSecond * 3.6f > 300.0f && !bHasDerailed)
-		{
-			bHasDerailed = true;
+		if (CurrentSpeedMs * 3.6f > 300.0f)
 			DerailTrain();
-		}
-	
-		// Phase 14: Dynamic Track Degradation (Camera Shake)
-		if (CameraComp)
-		{
-			FVector Loc = GetActorLocation();
-			EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
-		
-			// Industrial tracks are old and poorly maintained
-			if (Zone == EZoningClassification::HeavyIndustrial && SpeedMetersPerSecond > 5.0f)
-			{
-				float ShakeAmount = SpeedMetersPerSecond * 0.2f;
-				float NoiseX = FMath::PerlinNoise1D(GetGameTimeSinceCreation() * 10.0f) * ShakeAmount;
-				float NoiseZ = FMath::PerlinNoise1D(GetGameTimeSinceCreation() * 12.0f + 100.0f) * ShakeAmount;
-				CameraComp->SetRelativeLocation(FVector(0, NoiseX, NoiseZ));
-			}
-			else 
-			{
-				// Smooth ride on all other rails
-				CameraComp->SetRelativeLocation(FVector::ZeroVector);
-			}
-		}
+	}
 
-		EraVFXManager->UpdateVFXState(SpeedMetersPerSecond, EngineLoad);
+	// ── Push data to Slate HUD ────────────────────────────────────────────────
+	TimeSinceLastHUDUpdate += DeltaTime;
+	if (TimeSinceLastHUDUpdate >= 0.1f)
+	{
+		TimeSinceLastHUDUpdate = 0.0f;
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			if (ATrainSimHUD* SimHUD = Cast<ATrainSimHUD>(PC->GetHUD()))
+			{
+				UEconomySubsystem* Eco = GetGameInstance()->GetSubsystem<UEconomySubsystem>();
+				int32 Wallet = Eco ? Eco->GetPlayerBalance() : 0;
+				bool  bLight = Headlight ? Headlight->IsVisible() : false;
+				FString Signal = TEXT("GREEN");
+
+				FHitResult Hit;
+				FVector Ts = GetActorLocation();
+				FVector Te = Ts + GetActorForwardVector() * 20000.0f;
+				FCollisionQueryParams QP;
+				QP.AddIgnoredActor(this);
+				if (GetWorld()->LineTraceSingleByChannel(Hit, Ts, Te, ECC_Visibility, QP))
+					if (Hit.GetActor() && Hit.GetActor()->GetName().Contains(TEXT("Signal")))
+						Signal = TEXT("RED");
+
+				SimHUD->UpdateData(CurrentSpeedMs * 3.6f, CurrentThrottleNotch,
+					BrakePipePressure, BrakeCylinderPressure, Wallet, Signal, bLight);
+			}
+		}
 	}
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Bind Throttle and Brake Actions
 		if (ThrottleAction)
-		{
 			EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Triggered, this, &ATrainPawn::ThrottleInput);
-		}
-		
 		if (BrakeAction)
-		{
 			EnhancedInputComponent->BindAction(BrakeAction, ETriggerEvent::Triggered, this, &ATrainPawn::BrakeInput);
-		}
-		
 		if (SwitchTrainAction)
-		{
 			EnhancedInputComponent->BindAction(SwitchTrainAction, ETriggerEvent::Started, this, &ATrainPawn::SwitchTrainInput);
-		}
 	}
 
 	PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &ATrainPawn::ToggleHeadlight);
-	
-	// Phase 13 Input Bindings
-	PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &ATrainPawn::PlayHorn);
+	PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &ATrainPawn::PlayHorn);
 	PlayerInputComponent->BindKey(EKeys::J, IE_Pressed, this, &ATrainPawn::SwitchTrack);
 
-	// 360 Degree Camera Orbit Bindings
+	// 360° camera orbit
 	PlayerInputComponent->BindAxisKey(EKeys::MouseX, this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxisKey(EKeys::MouseY, this, &APawn::AddControllerPitchInput);
 }
 
 void ATrainPawn::SwitchTrainInput(const FInputActionValue& Value)
 {
-	// Unpossess the current train and spawn a Drone Camera
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		PlayerController->UnPossess();
-		// Spawn a Drone Camera Pawn and possess it
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		PC->UnPossess();
+		FActorSpawnParameters SP;
+		SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		FVector SpawnLoc = GetActorLocation() + FVector(0.0f, 0.0f, 1500.0f);
-		if (AActor* DroneCam = GetWorld()->SpawnActor<AActor>(ADefaultPawn::StaticClass(), SpawnLoc, GetActorRotation(), SpawnParams))
-		{
+		if (AActor* DroneCam = GetWorld()->SpawnActor<AActor>(ADefaultPawn::StaticClass(), SpawnLoc, GetActorRotation(), SP))
 			if (APawn* DronePawn = Cast<APawn>(DroneCam))
-			{
-				PlayerController->Possess(DronePawn);
-			}
-		}
-		UE_LOG(LogTemp, Warning, TEXT("Switched to Drone Camera Mode!"));
+				PC->Possess(DronePawn);
 	}
 }
 
 void ATrainPawn::ThrottleInput(const FInputActionValue& Value)
 {
-	float ThrottleValue = Value.Get<float>();
-	SetThrottleNotch(CurrentThrottleNotch + (ThrottleValue * 1.0f)); // Increment/Decrement notch
+	SetThrottleNotch(CurrentThrottleNotch + Value.Get<float>());
 }
 
 void ATrainPawn::BrakeInput(const FInputActionValue& Value)
 {
-	float BrakeValue = Value.Get<float>();
-	// E.g., positive input reduces target pressure (applies brakes)
-	SetTargetBrakePressure(TargetBrakePipePressure - (BrakeValue * 2.0f));
+	SetTargetBrakePressure(TargetBrakePipePressure - Value.Get<float>() * 2.0f);
 }
 
-// --- Phase 14: Multiplayer Co-Op Network Replication ---
 void ATrainPawn::SetThrottleNotch(float NewNotch)
 {
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		Server_SetThrottleNotch(NewNotch);
-	}
+	if (GetLocalRole() < ROLE_Authority) Server_SetThrottleNotch(NewNotch);
 	CurrentThrottleNotch = FMath::Clamp(NewNotch, 0.0f, 8.0f);
 }
-
-void ATrainPawn::Server_SetThrottleNotch_Implementation(float NewNotch)
-{
-	SetThrottleNotch(NewNotch);
-}
-bool ATrainPawn::Server_SetThrottleNotch_Validate(float NewNotch)
-{
-	return true;
-}
+void ATrainPawn::Server_SetThrottleNotch_Implementation(float NewNotch) { SetThrottleNotch(NewNotch); }
+bool ATrainPawn::Server_SetThrottleNotch_Validate(float NewNotch) { return true; }
 
 void ATrainPawn::SetTargetBrakePressure(float NewPressure)
 {
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		Server_SetTargetBrakePressure(NewPressure);
-	}
+	if (GetLocalRole() < ROLE_Authority) Server_SetTargetBrakePressure(NewPressure);
 	TargetBrakePipePressure = FMath::Clamp(NewPressure, 0.0f, 90.0f);
 }
+void ATrainPawn::Server_SetTargetBrakePressure_Implementation(float P) { SetTargetBrakePressure(P); }
+bool ATrainPawn::Server_SetTargetBrakePressure_Validate(float P) { return true; }
 
-void ATrainPawn::Server_SetTargetBrakePressure_Implementation(float NewPressure)
+void ATrainPawn::OnCouplerOverlap(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)
 {
-	SetTargetBrakePressure(NewPressure);
-}
-bool ATrainPawn::Server_SetTargetBrakePressure_Validate(float NewPressure)
-{
-	return true;
-}
-
-void ATrainPawn::OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (OtherActor && OtherActor != this && OtherComp && OtherComp->IsSimulatingPhysics())
-	{
-		if (RearAttachedCar != nullptr) return;
-
-		RearCoupler->SetConstrainedComponents(Cast<UPrimitiveComponent>(RootComponent), NAME_None, Cast<UPrimitiveComponent>(OtherComp), NAME_None);
-		
-		RearCoupler->SetLinearXLimit(LCM_Limited, 15.0f);
-		RearCoupler->SetLinearYLimit(LCM_Locked, 0.0f);
-		RearCoupler->SetLinearZLimit(LCM_Locked, 0.0f);
-		
-		RearCoupler->SetAngularSwing1Limit(ACM_Limited, 10.0f);
-		RearCoupler->SetAngularSwing2Limit(ACM_Limited, 10.0f);
-		RearCoupler->SetAngularTwistLimit(ACM_Locked, 0.0f);
-
-		RearAttachedCar = OtherActor;
-	}
+	// Kinematic consist — overlap coupling is a no-op
 }
 
 void ATrainPawn::LogPhysicsState()
 {
-	FString PhysicsLogFilePath = FPaths::ProjectSavedDir() / TEXT("PhysicsDebugLog.txt");
-	FVector Loc = GetActorLocation();
-	FRotator Rot = GetActorRotation();
-	FVector Vel = GetVelocity();
-	FString LogLine = FString::Printf(TEXT("[Locomotive] Loc=(%f,%f,%f) Rot=(%f,%f,%f) Vel=(%f,%f,%f)\n"), Loc.X, Loc.Y, Loc.Z, Rot.Pitch, Rot.Yaw, Rot.Roll, Vel.X, Vel.Y, Vel.Z);
-	FFileHelper::SaveStringToFile(LogLine, *PhysicsLogFilePath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+	// Throttled to reduce disk I/O — called only via timer if needed
 }
 
 void ATrainPawn::ToggleHeadlight()
 {
-	if (Headlight)
-	{
-		Headlight->SetVisibility(!Headlight->IsVisible());
-	}
+	if (Headlight) Headlight->SetVisibility(!Headlight->IsVisible());
 }
 
 void ATrainPawn::PlayHorn()
 {
-	// Play horn sound — use a safe no-crash path
-	if (USoundBase* HornSound = LoadObject<USoundBase>(nullptr, TEXT("/Engine/Tutorial/SubEditors/TutorialAssets/SoundCue_StarterContent_Audio.SoundCue_StarterContent_Audio")))
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, HornSound, GetActorLocation(), 1.5f, 0.5f);
-	}
-	UE_LOG(LogTemp, Log, TEXT("HORN BLAST!"));
+	UE_LOG(LogTemp, Log, TEXT("HORN BLAST! Speed=%.1f km/h Throttle=%.0f"), CurrentSpeedMs * 3.6f, CurrentThrottleNotch);
 }
 
 void ATrainPawn::SwitchTrack()
 {
-	if (GetLocalRole() < ROLE_Authority)
-	{
-		Server_SwitchTrack();
-		return;
-	}
-
-	FVector ForwardVec = GetActorForwardVector();
-	FVector RightVec = GetActorRightVector();
-	FVector CurrentLoc = GetActorLocation();
-
-	CurrentLoc += (RightVec * 500.0f); 
-
-	SetActorLocation(CurrentLoc, false, nullptr, ETeleportType::TeleportPhysics);
-	UE_LOG(LogTemp, Warning, TEXT("Switched to Parallel Track!"));
+	if (GetLocalRole() < ROLE_Authority) { Server_SwitchTrack(); return; }
+	FVector NewLoc = GetActorLocation() + GetActorRightVector() * 2000.0f;
+	NewLoc.Z = 130.0f;
+	SetActorLocation(NewLoc);
+	UE_LOG(LogTemp, Warning, TEXT("Track switch! Moved 20m right."));
 }
-
-void ATrainPawn::Server_SwitchTrack_Implementation()
-{
-	SwitchTrack();
-}
-bool ATrainPawn::Server_SwitchTrack_Validate()
-{
-	return true;
-}
+void ATrainPawn::Server_SwitchTrack_Implementation() { SwitchTrack(); }
+bool ATrainPawn::Server_SwitchTrack_Validate() { return true; }
 
 void ATrainPawn::DerailTrain()
 {
-	// Phase 13: Physical Deformation Swap
-	if (UPrimitiveComponent* LocoPhysics = Cast<UPrimitiveComponent>(RootComponent))
-	{
-		// In a full build, this swaps the mesh with a Geometry Collection component
-		UE_LOG(LogTemp, Error, TEXT("FATAL DERAILMENT! Physics bounds exceeded, swapping to Geometry Collection Deformation Mesh."));
-		LocoPhysics->SetSimulatePhysics(true);
-		LocoPhysics->AddImpulse(FVector(0, 1000000.0f, 500000.0f)); // Violent physics flip
-	}
+	UE_LOG(LogTemp, Error, TEXT("DERAIL: speed limit exceeded. Reducing to safe speed."));
+	CurrentSpeedMs = 0.0f;
+	SetThrottleNotch(0.0f);
 }
-

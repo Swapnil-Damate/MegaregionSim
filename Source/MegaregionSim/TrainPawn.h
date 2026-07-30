@@ -16,6 +16,7 @@ class USphereComponent;
 class UWidgetComponent;
 class USpotLightComponent;
 class UNiagaraComponent;
+class USplineComponent;
 
 UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrainPawn : public APawn
@@ -28,20 +29,17 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-
-	// Acoustics Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Acoustics", meta = (AllowPrivateAccess = "true"))
+	// ── Components ─────────────────────────────────────────────────────────────
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Components")
 	UTrainAcousticsComponent* AcousticsComponent;
 
-	// VFX Manager
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Components")
 	UDynamicEraVFXManager* EraVFXManager;
 
-	// Camera Components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	USpringArmComponent* SpringArmComp;
 
@@ -53,7 +51,7 @@ public:
 
 	void ToggleHeadlight();
 
-	// Enhanced Input
+	// ── Enhanced Input ─────────────────────────────────────────────────────────
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;
 
@@ -66,7 +64,7 @@ public:
 	void ThrottleInput(const FInputActionValue& Value);
 	void BrakeInput(const FInputActionValue& Value);
 
-	// Train Physics Variables
+	// ── Train Physics Variables ────────────────────────────────────────────────
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics")
 	float MassInTons;
 
@@ -96,12 +94,24 @@ public:
 
 	float TimeSinceLastHUDUpdate;
 
-	// Input State
+	// ── Throttle & speed state ─────────────────────────────────────────────────
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Input")
 	float CurrentThrottleNotch;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Input")
 	float CurrentThrust;
+
+	/** Current kinematic speed in m/s — drives both movement and HUD */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
+	float CurrentSpeedMs;
+
+	// Current distance along the infinite track spline
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
+	float CurrentDistanceAlongSpline;
+
+	// Reference to the active track spline component
+	UPROPERTY(BlueprintReadOnly, Category = "Train Physics")
+	USplineComponent* MainTrackSplineRef;
 
 	UFUNCTION(BlueprintCallable, Category = "Train Input")
 	void SetThrottleNotch(float Notch);
@@ -117,10 +127,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Input")
 	UInputAction* SwitchTrainAction;
-	
+
 	void SwitchTrainInput(const FInputActionValue& Value);
 
-	// Physical Constraints acting as Knuckle Couplers
+	// ── Kinematic consist — cars are positioned each Tick ─────────────────────
+	UPROPERTY()
+	TArray<AActor*> ConsistCars;
+
+	// ── Physical Rear Coupler (overlap trigger) ────────────────────────────────
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coupler")
 	UPhysicsConstraintComponent* RearCoupler;
 
@@ -131,11 +145,11 @@ public:
 	AActor* RearAttachedCar;
 
 	UFUNCTION()
-	void OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnCouplerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	void LogPhysicsState();
 
-	// Phase 13 Features
 	void PlayHorn();
 	void SwitchTrack();
 	UFUNCTION(Server, Reliable, WithValidation)

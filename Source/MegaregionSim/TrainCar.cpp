@@ -30,7 +30,7 @@ ATrainCar::ATrainCar()
 	bIsLiquidCargo = true; // Default to true so we don't need Python set_editor_property
 
 	// Visual Mesh
-	UStaticMeshComponent* VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrainFreightVisualMesh"));
+	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrainFreightVisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	if (CubeMeshAsset.Succeeded())
@@ -183,5 +183,42 @@ void ATrainCar::LogPhysicsState()
 	FVector Vel = GetVelocity();
 	FString LogLine = FString::Printf(TEXT("[TrainCar] Loc=(%f,%f,%f) Rot=(%f,%f,%f) Vel=(%f,%f,%f)\n"), Loc.X, Loc.Y, Loc.Z, Rot.Pitch, Rot.Yaw, Rot.Roll, Vel.X, Vel.Y, Vel.Z);
 	FFileHelper::SaveStringToFile(LogLine, *PhysicsLogFilePath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), FILEWRITE_Append);
+}
+
+void ATrainCar::ConfigureCarVisuals(int32 CarIndex)
+{
+	if (!VisualMesh) return;
+
+	UStaticMesh* LoadedMesh = nullptr;
+	int32 Selection = CarIndex % 3;
+	if (Selection == 0)
+	{
+		LoadedMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FinalAssets/Liquid_Tanker.Liquid_Tanker'"));
+	}
+	else if (Selection == 1)
+	{
+		LoadedMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FinalAssets/Bulk_Hopper.Bulk_Hopper'"));
+	}
+	else
+	{
+		LoadedMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FinalAssets/Passenger_Coach.Passenger_Coach'"));
+	}
+
+	if (LoadedMesh)
+	{
+		VisualMesh->SetStaticMesh(LoadedMesh);
+		VisualMesh->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
+		VisualMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	}
+	else
+	{
+		// Fallback to standard cube
+		UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+		if (CubeMesh)
+		{
+			VisualMesh->SetStaticMesh(CubeMesh);
+			VisualMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f));
+		}
+	}
 }
 

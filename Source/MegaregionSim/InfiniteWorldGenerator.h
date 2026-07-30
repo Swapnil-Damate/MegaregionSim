@@ -46,6 +46,7 @@ private:
 	
 	// Track spline progression
 	float LastSplineGenerationDistance = 0.0f;
+	float LastSplineZ = 0.0f;
 	
 	// Internal functions
 	void GenerateSplineAhead(float Distance);

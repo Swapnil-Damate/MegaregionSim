@@ -26,6 +26,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Physics")
 	UBoxComponent* CarBody;
 
+	// Visual Mesh of the car
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+	UStaticMeshComponent* VisualMesh;
+
+	// Configure mesh and scale based on car index
+	void ConfigureCarVisuals(int32 CarIndex);
+
 	// Physical Constraints acting as Knuckle Couplers
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coupler")
 	UPhysicsConstraintComponent* FrontCoupler;
