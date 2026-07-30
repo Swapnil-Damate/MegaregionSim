@@ -30,8 +30,17 @@ void AInfiniteWorldGenerator::BeginPlay()
 		TrackedPlayer = PC->GetPawn();
 	}
 
+	// Initialize essential chunk math before anything generates
+	if (ChunkLength <= 0.0f)
+	{
+		ChunkLength = 100000.0f; 
+	}
+
 	// Generate initial spline points
 	GenerateSplineAhead(ChunkLength * GenerationDistance);
+	
+	// Force generate physical chunks instantly so the train doesn't fall into the void
+	ManageChunks();
 }
 
 void AInfiniteWorldGenerator::Tick(float DeltaTime)

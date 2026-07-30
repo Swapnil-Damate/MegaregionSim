@@ -116,14 +116,14 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 {
 	// A simple approach using ISM for tracks (fast).
 	float TrackMeshLength = 2500.0f; // 25 meters per mesh segment
-	float ScaleY = 1.0f;
+	float ScaleX = 1.0f;
 	
 	if (TrackMeshISM->GetStaticMesh())
 	{
-		float MeshLength = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().Y;
-		if (MeshLength > 0.1f)
+		float MeshLength = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().X;
+		if (MeshLength > 10.0f)
 		{
-			ScaleY = TrackMeshLength / MeshLength;
+			ScaleX = TrackMeshLength / MeshLength;
 		}
 	}
 	
@@ -132,18 +132,17 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		FVector StartLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		FRotator StartRot = Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		StartRot.Roll = 0.0f;
-		StartRot.Yaw += 90.0f;
 		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		
 		FTransform TrackTransform1;
 		TrackTransform1.SetLocation(StartLoc);
 		TrackTransform1.SetRotation(StartRot.Quaternion());
-		TrackTransform1.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
+		TrackTransform1.SetScale3D(FVector(ScaleX, 1.0f, 1.0f)); 
 		
 		FTransform TrackTransform2;
 		TrackTransform2.SetLocation(StartLoc + (RightVec * 500.0f)); // Double track offset 5 meters
 		TrackTransform2.SetRotation(StartRot.Quaternion());
-		TrackTransform2.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
+		TrackTransform2.SetScale3D(FVector(ScaleX, 1.0f, 1.0f)); 
 		
 		TrackMeshISM->AddInstance(TrackTransform1);
 		TrackMeshISM->AddInstance(TrackTransform2);

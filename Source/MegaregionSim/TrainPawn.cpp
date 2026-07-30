@@ -206,6 +206,9 @@ void ATrainPawn::SpawnConsist()
 			{
 				MeshComp->SetMobility(EComponentMobility::Movable);
 				MeshComp->SetStaticMesh(ContainerMesh);
+				// Lower the mesh by 200 units to sit flush on the rails, just like the locomotive
+				MeshComp->SetRelativeLocation(FVector(0.0f, 0.0f, -200.0f));
+				MeshComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 				MeshComp->SetSimulatePhysics(true);
 				MeshComp->SetMassOverrideInKg(NAME_None, 5000.0f, true); // 5 tons each
 			}
@@ -213,7 +216,9 @@ void ATrainPawn::SpawnConsist()
 			UPhysicsConstraintComponent* Coupler = NewObject<UPhysicsConstraintComponent>(NewCar, UPhysicsConstraintComponent::StaticClass());
 			Coupler->RegisterComponent();
 			Coupler->AttachToComponent(NewCar->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-			Coupler->SetWorldLocation(SpawnLoc + (ForwardVec * 1000.0f));
+			// Place coupler exactly halfway between the LastCar and NewCar
+			FVector CouplerLoc = SpawnLoc + (ForwardVec * 1000.0f); // 1000 units ahead of NewCar (towards LastCar)
+			Coupler->SetWorldLocation(CouplerLoc);
 
 			UPrimitiveComponent* LastComp = Cast<UPrimitiveComponent>(LastCar->GetRootComponent());
 			UPrimitiveComponent* NewComp = Cast<UPrimitiveComponent>(NewCar->GetRootComponent());
