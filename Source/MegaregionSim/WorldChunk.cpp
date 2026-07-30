@@ -14,6 +14,11 @@ AWorldChunk::AWorldChunk()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PineAsset(TEXT("StaticMesh'/Game/FinalAssets/The_Pine_Tree.The_Pine_Tree'"));
 	if (PineAsset.Succeeded()) PineTreeISM->SetStaticMesh(PineAsset.Object);
 
+	GrassISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GrassISM"));
+	GrassISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassAsset(TEXT("StaticMesh'/Game/FinalAssets/Grass_patch.Grass_patch'"));
+	if (GrassAsset.Succeeded()) GrassISM->SetStaticMesh(GrassAsset.Object);
+
 	SkyscraperISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SkyscraperISM"));
 	SkyscraperISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SkyAsset(TEXT("StaticMesh'/Game/FinalAssets/Skyscraper.Skyscraper'"));
@@ -81,6 +86,20 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 					InstanceTransform.SetScale3D(FVector(FMath::RandRange(0.8f, 1.5f)));
 					InstanceTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
 					PineTreeISM->AddInstance(InstanceTransform);
+					
+					// Scatter Grass nearby
+					for (int i = 0; i < 3; i++)
+					{
+						FTransform GrassTransform;
+						float GrassX = SpawnLoc.X + FMath::RandRange(-2000.0f, 2000.0f);
+						float GrassY = SpawnLoc.Y + FMath::RandRange(-2000.0f, 2000.0f);
+						float GrassZ = SplineLoc.Z - 200.0f; // Keep on the flat ground
+						
+						GrassTransform.SetLocation(FVector(GrassX, GrassY, GrassZ));
+						GrassTransform.SetScale3D(FVector(FMath::RandRange(1.0f, 2.0f)));
+						GrassTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
+						GrassISM->AddInstance(GrassTransform);
+					}
 				}
 				else if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
 				{
@@ -129,8 +148,8 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		TrackMeshISM->AddInstance(TrackTransform1);
 		TrackMeshISM->AddInstance(TrackTransform2);
 		
-		// Spawn a signal every 5000 meters
-		if (FMath::Fmod(Dist, 5000.0f) < TrackMeshLength * 0.5f)
+		// Spawn a signal every 200000 meters
+		if (FMath::Fmod(Dist, 200000.0f) < TrackMeshLength * 0.5f)
 		{
 			FTransform SignalTransform;
 			SignalTransform.SetLocation(StartLoc + (RightVec * 800.0f)); // 8m to the right

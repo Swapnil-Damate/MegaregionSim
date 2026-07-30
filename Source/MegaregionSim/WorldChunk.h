@@ -24,6 +24,9 @@ protected:
 	UInstancedStaticMeshComponent* PineTreeISM;
 	
 	UPROPERTY()
+	UInstancedStaticMeshComponent* GrassISM;
+	
+	UPROPERTY()
 	UInstancedStaticMeshComponent* SkyscraperISM;
 
 	UPROPERTY()

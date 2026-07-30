@@ -58,7 +58,7 @@ ATrainPawn::ATrainPawn()
 	{
 		TrainMesh->SetStaticMesh(TrainAsset.Object);
 		TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, -200.0f));
-		TrainMesh->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));
+		TrainMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 		TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 	}
 
@@ -137,8 +137,8 @@ void ATrainPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Teleport the train above the exact origin of the procedural tracks so it falls onto them
-	SetActorLocationAndRotation(FVector(0.0f, 0.0f, 400.0f), FRotator::ZeroRotator);
+	// Teleport the train 200m ahead of the origin so the cars have track to spawn on behind it
+	SetActorLocationAndRotation(FVector(20000.0f, 0.0f, 400.0f), FRotator::ZeroRotator);
 
 	// Clear the physics log file at the start of a new run
 	if (GetLocalRole() == ROLE_Authority)
