@@ -31,6 +31,9 @@ protected:
 
 	UPROPERTY()
 	UInstancedStaticMeshComponent* TrackMeshISM;
+	
+	UPROPERTY()
+	UInstancedStaticMeshComponent* SignalISM;
 
 	UPROPERTY()
 	TArray<USplineMeshComponent*> SplineMeshes;

@@ -32,8 +32,5 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PCG")
 	UInstancedStaticMeshComponent* GrassISM;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PCG")
-	UInstancedStaticMeshComponent* SignalISM;
-
 private:
 };

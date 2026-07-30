@@ -28,6 +28,11 @@ AWorldChunk::AWorldChunk()
 	TunnelISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> TunnelAsset(TEXT("StaticMesh'/Game/FinalAssets/Tunnel_Mesh.Tunnel_Mesh'"));
 	if (TunnelAsset.Succeeded()) TunnelISM->SetStaticMesh(TunnelAsset.Object);
+
+	SignalISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SignalISM"));
+	SignalISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Modern_LED_Signal.Modern_LED_Signal'"));
+	if (SignalAsset.Succeeded()) SignalISM->SetStaticMesh(SignalAsset.Object);
 }
 
 void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineComponent* InSpline, float StartDistance, float EndDistance)
@@ -46,26 +51,26 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 		
 		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(SplineLoc.X, SplineLoc.Y));
 		
+		float NoiseScale = 0.00015f;
+		float TrackMountainZ = FMath::PerlinNoise2D(FVector2D(SplineLoc.X * NoiseScale, SplineLoc.Y * NoiseScale)) * 12000.0f;
+		bool bIsTunnel = false;
+		if (TrackMountainZ > SplineLoc.Z + 1500.0f)
+		{
+			bIsTunnel = true;
+			FTransform TunnelTransform;
+			TunnelTransform.SetLocation(SplineLoc);
+			TunnelTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World).Quaternion());
+			TunnelTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+			TunnelISM->AddInstance(TunnelTransform);
+		}
+		
 		for (float Offset = -10000.0f; Offset <= 10000.0f; Offset += 3000.0f)
 		{
 			if (FMath::Abs(Offset) < 2500.0f) continue; // Wider clearance for track
+			if (bIsTunnel) continue; // Skip trees around tunnel entrances to avoid clipping
 
 			FVector SpawnLoc = SplineLoc + (SplineRight * Offset);
-			
-			float NoiseScale = 0.00015f;
-			float MountainZ = FMath::PerlinNoise2D(FVector2D(SpawnLoc.X * NoiseScale, SpawnLoc.Y * NoiseScale)) * 12000.0f;
-			if (MountainZ > SplineLoc.Z + 1500.0f)
-			{
-				// Spawn a Procedural Tunnel mesh on the spline instead of trees
-				FTransform TunnelTransform;
-				TunnelTransform.SetLocation(SplineLoc);
-				TunnelTransform.SetRotation(Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World).Quaternion());
-				TunnelTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
-				TunnelISM->AddInstance(TunnelTransform);
-			}
-			else
-			{
-				SpawnLoc.Z = SplineLoc.Z - 200.0f; // Sink into the ground to prevent floating
+			SpawnLoc.Z = SplineLoc.Z - 200.0f; // Sink into the ground to prevent floating
 
 				FTransform InstanceTransform;
 				InstanceTransform.SetLocation(SpawnLoc);
@@ -92,14 +97,14 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 {
 	// A simple approach using ISM for tracks (fast).
 	float TrackMeshLength = 2500.0f; // 25 meters per mesh segment
-	float ScaleX = 1.0f;
+	float ScaleY = 1.0f;
 	
 	if (TrackMeshISM->GetStaticMesh())
 	{
-		float MeshLength = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().X;
+		float MeshLength = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().Y;
 		if (MeshLength > 0.1f)
 		{
-			ScaleX = TrackMeshLength / MeshLength;
+			ScaleY = TrackMeshLength / MeshLength;
 		}
 	}
 	
@@ -114,17 +119,26 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		FTransform TrackTransform1;
 		TrackTransform1.SetLocation(StartLoc);
 		TrackTransform1.SetRotation(StartRot.Quaternion());
-		TrackTransform1.SetScale3D(FVector(ScaleX, 1.0f, 1.0f)); 
+		TrackTransform1.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
 		
 		FTransform TrackTransform2;
 		TrackTransform2.SetLocation(StartLoc + (RightVec * 500.0f)); // Double track offset 5 meters
 		TrackTransform2.SetRotation(StartRot.Quaternion());
-		TrackTransform2.SetScale3D(FVector(ScaleX, 1.0f, 1.0f)); 
+		TrackTransform2.SetScale3D(FVector(1.0f, ScaleY, 1.0f)); 
 		
 		TrackMeshISM->AddInstance(TrackTransform1);
 		TrackMeshISM->AddInstance(TrackTransform2);
+		
+		// Spawn a signal every 5000 meters
+		if (FMath::Fmod(Dist, 5000.0f) < TrackMeshLength * 0.5f)
+		{
+			FTransform SignalTransform;
+			SignalTransform.SetLocation(StartLoc + (RightVec * 800.0f)); // 8m to the right
+			SignalTransform.SetRotation(StartRot.Quaternion());
+			SignalTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+			SignalISM->AddInstance(SignalTransform);
+		}
 	}
-}
 	// --- Procedural Stations ---
 	// Roughly every 10 miles (StartDist % 1600000 == 0), spawn a station if we are in an urban zone
 	float StationFmod = FMath::Fmod(StartDist, 1600000.0f);

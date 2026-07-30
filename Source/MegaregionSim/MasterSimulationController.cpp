@@ -28,11 +28,6 @@ AMasterSimulationController::AMasterSimulationController()
 	GrassISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassAsset(TEXT("StaticMesh'/Game/FinalAssets/Grass_patch.Grass_patch'"));
 	if (GrassAsset.Succeeded()) GrassISM->SetStaticMesh(GrassAsset.Object);
-	
-	SignalISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SignalISM"));
-	SignalISM->SetupAttachment(RootComponent);
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Modern_LED_Signal.Modern_LED_Signal'"));
-	if (SignalAsset.Succeeded()) SignalISM->SetStaticMesh(SignalAsset.Object);
 }
 
 void AMasterSimulationController::BeginPlay()
@@ -42,11 +37,7 @@ void AMasterSimulationController::BeginPlay()
 	GenerateEnvironment();
 
 	UWorld* World = GetWorld();
-	if (World)
-	{
-		FActorSpawnParameters SpawnParams;
-
-	}
+	// Spawn code relocated to InfiniteWorldGenerator
 }
 
 void AMasterSimulationController::GenerateEnvironment()
@@ -91,15 +82,6 @@ void AMasterSimulationController::GenerateEnvironment()
 				SkyscraperISM->AddInstance(InstanceTransform);
 			}
 		}
-	}
-
-	// Scatter signals along the track (rough implementation)
-	for (int32 X = -20000; X <= 20000; X += 4000)
-	{
-		FTransform SignalTransform;
-		SignalTransform.SetLocation(FVector(X, 1000.0f, 0)); // Offset from track
-		SignalTransform.SetRotation(FQuat(FRotator(0, 90.0f, 0)));
-		SignalISM->AddInstance(SignalTransform);
 	}
 }
 
