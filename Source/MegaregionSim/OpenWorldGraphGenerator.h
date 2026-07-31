@@ -58,6 +58,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TrackNetwork")
 	TArray<FCityNode> CityGraph;
 
+	UFUNCTION(BlueprintCallable, Category = "Megaregion|PCG")
+	void GenerateNextChunk(FVector PlayerLoc);
+
 protected:
 	virtual void BeginPlay() override;
 

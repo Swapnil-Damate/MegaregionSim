@@ -583,6 +583,7 @@ void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &ATrainPawn::ToggleHeadlight);
 	PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &ATrainPawn::PlayHorn);
 	PlayerInputComponent->BindKey(EKeys::J, IE_Pressed, this, &ATrainPawn::SwitchTrack);
+	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &ATrainPawn::ToggleCinematicCamera);
 
 	// 360° camera orbit
 	PlayerInputComponent->BindAxisKey(EKeys::MouseX, this, &APawn::AddControllerYawInput);
@@ -600,6 +601,44 @@ void ATrainPawn::SwitchTrainInput(const FInputActionValue& Value)
 		if (AActor* DroneCam = GetWorld()->SpawnActor<AActor>(ADefaultPawn::StaticClass(), SpawnLoc, GetActorRotation(), SP))
 			if (APawn* DronePawn = Cast<APawn>(DroneCam))
 				PC->Possess(DronePawn);
+	}
+}
+
+void ATrainPawn::ToggleCinematicCamera()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC)
+	{
+		PC = GetWorld()->GetFirstPlayerController();
+	}
+
+	if (PC)
+	{
+		if (PC->GetPawn() == this)
+		{
+			PC->UnPossess();
+			if (!CinematicDroneCam)
+			{
+				FActorSpawnParameters SP;
+				SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				FVector SpawnLoc = GetActorLocation() + FVector(-1500.0f, 1500.0f, 1000.0f);
+				FRotator SpawnRot = (GetActorLocation() - SpawnLoc).Rotation();
+				CinematicDroneCam = GetWorld()->SpawnActor<ADefaultPawn>(ADefaultPawn::StaticClass(), SpawnLoc, SpawnRot, SP);
+			}
+			else
+			{
+				CinematicDroneCam->SetActorLocation(GetActorLocation() + FVector(-1500.0f, 1500.0f, 1000.0f));
+				CinematicDroneCam->SetActorRotation((GetActorLocation() - CinematicDroneCam->GetActorLocation()).Rotation());
+			}
+			PC->Possess(CinematicDroneCam);
+			EnableInput(PC);
+		}
+		else if (PC->GetPawn() == CinematicDroneCam)
+		{
+			PC->UnPossess();
+			PC->Possess(this);
+			DisableInput(PC);
+		}
 	}
 }
 

@@ -6,6 +6,7 @@
 #include "TimerManager.h"
 #include "OpenWorldGraphGenerator.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/SplineComponent.h"
 
 void UAutomatedTrainSpawner::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -37,6 +38,14 @@ void UAutomatedTrainSpawner::SpawnRealAITrains()
 
 		FVector SpawnLocation = City.Location + FVector(0, 0, 100.0f); 
 		FRotator SpawnRotation(0, 180.0f, 0);
+
+		if (GraphGen->ExpressTrackForward)
+		{
+			float ClosestKey = GraphGen->ExpressTrackForward->FindInputKeyClosestToWorldLocation(SpawnLocation);
+			SpawnLocation = GraphGen->ExpressTrackForward->GetLocationAtSplineInputKey(ClosestKey, ESplineCoordinateSpace::World);
+			SpawnRotation = GraphGen->ExpressTrackForward->GetRotationAtSplineInputKey(ClosestKey, ESplineCoordinateSpace::World);
+			SpawnLocation.Z += 100.0f;
+		}
 
 		ATrainPawn* NewTrain = GetWorld()->SpawnActor<ATrainPawn>(SpawnLocation, SpawnRotation, SpawnParams);
 		if (NewTrain)

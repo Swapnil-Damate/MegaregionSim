@@ -147,6 +147,11 @@ public:
 
 	void SwitchTrainInput(const FInputActionValue& Value);
 
+	UPROPERTY()
+	APawn* CinematicDroneCam = nullptr;
+
+	void ToggleCinematicCamera();
+
 	// ── Kinematic consist — cars are positioned each Tick ─────────────────────
 	UPROPERTY()
 	TArray<AActor*> ConsistCars;
