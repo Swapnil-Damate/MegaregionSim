@@ -11,6 +11,8 @@ class MEGAREGIONSIM_API AMegaregionGameMode : public AGameModeBase
 	
 public:
 	AMegaregionGameMode();
+	
+	virtual void BeginPlay() override;
 
 	// Train selection — set from HUD start menu before spawning
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Selection")

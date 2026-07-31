@@ -2,6 +2,9 @@
 #include "UObject/ConstructorHelpers.h"
 #include "TrainPawn.h"
 #include "TrainSimHUD.h"
+#include "OpenWorldGraphGenerator.h"
+#include "MegaregionWeatherSystem.h"
+#include "Kismet/GameplayStatics.h"
 
 AMegaregionGameMode::AMegaregionGameMode()
 {
@@ -18,5 +21,28 @@ AMegaregionGameMode::AMegaregionGameMode()
 	{
 		// Fallback to C++ class if BP doesn't exist yet
 		DefaultPawnClass = ATrainPawn::StaticClass();
+	}
+}
+
+void AMegaregionGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Ensure the OpenWorldGraphGenerator exists in the world
+	AActor* GraphGen = UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass());
+	if (!GraphGen)
+	{
+		FActorSpawnParameters SP;
+		SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		GetWorld()->SpawnActor<AOpenWorldGraphGenerator>(AOpenWorldGraphGenerator::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
+	}
+
+	// Ensure the Weather System exists in the world
+	AActor* WeatherSys = UGameplayStatics::GetActorOfClass(GetWorld(), AMegaregionWeatherSystem::StaticClass());
+	if (!WeatherSys)
+	{
+		FActorSpawnParameters SP;
+		SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		GetWorld()->SpawnActor<AMegaregionWeatherSystem>(AMegaregionWeatherSystem::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
 	}
 }
