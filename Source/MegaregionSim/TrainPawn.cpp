@@ -162,17 +162,33 @@ void ATrainPawn::BeginPlay()
 	}
 
 	// Initialize starting location
-	CurrentDistanceAlongSpline = 20000.0f;
+	if (GetActorLocation().X > 25000.0f)
+	{
+		CurrentDistanceAlongSpline = GetActorLocation().X; // AI trains spawned far ahead
+	}
+	else
+	{
+		CurrentDistanceAlongSpline = 20000.0f; // Player train
+	}
+
 	if (MainTrackSplineRef)
 	{
 		FVector StartLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
 		FRotator StartRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
+		
+		if (bOnParallelTrack)
+		{
+			// Shift AI trains to the parallel track
+			FVector RightVec = FRotationMatrix(StartRot).GetScaledAxis(EAxis::Y);
+			StartLoc += (RightVec * 3500.0f);
+		}
+		
 		StartLoc.Z += 100.0f; // sit exactly on top of rails
 		SetActorLocationAndRotation(StartLoc, StartRot);
 	}
 	else
 	{
-		SetActorLocationAndRotation(FVector(20000.0f, 0.0f, 130.0f), FRotator::ZeroRotator);
+		SetActorLocationAndRotation(FVector(CurrentDistanceAlongSpline, 0.0f, 130.0f), FRotator::ZeroRotator);
 	}
 
 	// Clear physics log

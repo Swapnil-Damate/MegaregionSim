@@ -159,6 +159,11 @@ void ATrainSimHUD::HandleStartMenuInput()
     {
         bShowStartMenu = false;
         
+        // Return control to the game
+        FInputModeGameOnly InputMode;
+        PC->SetInputMode(InputMode);
+        PC->bShowMouseCursor = false;
+        
         // Store selections in GameMode
         if (AMegaregionGameMode* GM = Cast<AMegaregionGameMode>(GetWorld()->GetAuthGameMode()))
         {
