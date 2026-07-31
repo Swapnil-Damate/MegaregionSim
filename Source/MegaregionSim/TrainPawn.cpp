@@ -265,7 +265,7 @@ void ATrainPawn::SpawnConsist()
     
     ConsistCars.Empty();
     
-    const float CarSpacing = 1050.0f; // 10.5m per car slot (tight realistic coupling)
+    const float CarSpacing = 2600.0f; // 26m per car slot (prevents clipping of long cars)
     FVector ForwardVec = GetActorForwardVector();
     FRotator LocoRot = GetActorRotation();
     
@@ -480,7 +480,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		SetActorLocationAndRotation(NewLoc, NewRot);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 1050.0f; // 10.5m per car slot (tight realistic coupling)
+		const float CarSpacing = 2600.0f; // 26m per car slot
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
@@ -509,7 +509,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		SetActorLocation(NewLoc);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 1050.0f; // 10.5m per car slot (tight realistic coupling)
+		const float CarSpacing = 2600.0f; // 26m per car slot
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
