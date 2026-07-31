@@ -111,7 +111,6 @@ void AMasterSimulationController::Tick(float DeltaTime)
 				if (Fog && Fog->GetComponent())
 				{
 					Fog->GetComponent()->SetFogDensity(GameMode->SelectedWeather == 1 ? 0.05f : 0.15f);
-					Fog->GetComponent()->SetFogFalloff(0.2f);
 				}
 			}
 

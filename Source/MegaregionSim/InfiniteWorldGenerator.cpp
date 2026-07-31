@@ -29,7 +29,7 @@ float AInfiniteWorldGenerator::GetProceduralTerrainZ(float X, float Y) {
 
 static float GetGroundHeightForGenerator(UWorld* World, float X, float Y, float DefaultZ)
 {
-	return GetProceduralTerrainZ(X, Y);
+	return AInfiniteWorldGenerator::GetProceduralTerrainZ(X, Y);
 }
 
 void AInfiniteWorldGenerator::BeginPlay()
