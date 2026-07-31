@@ -21,6 +21,8 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
+	static float GetProceduralTerrainZ(float X, float Y);
+
 	// The massive infinite spine track
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Infinite World")
 	USplineComponent* MainTrackSpline;

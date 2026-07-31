@@ -101,16 +101,11 @@ void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineCom
 	GenerateTrackSplineMeshes(InSpline, StartDistance, EndDistance);
 }
 
-static float GetProceduralTerrainZ(float X, float Y) {
-    float NoiseScale = 0.00002f;
-    float Mountains = FMath::PerlinNoise2D(FVector2D(X * NoiseScale, Y * NoiseScale)) * 10000.0f;
-    float Details = FMath::PerlinNoise2D(FVector2D(X * NoiseScale * 5.0f, Y * NoiseScale * 5.0f)) * 3000.0f;
-    return Mountains + Details;
-}
+#include "InfiniteWorldGenerator.h"
 
 static float GetGroundHeightForChunk(UWorld* World, float X, float Y, float DefaultZ)
 {
-	return GetProceduralTerrainZ(X, Y);
+	return AInfiniteWorldGenerator::GetProceduralTerrainZ(X, Y);
 }
 
 void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist)

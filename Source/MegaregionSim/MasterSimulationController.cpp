@@ -91,6 +91,8 @@ void AMasterSimulationController::GenerateEnvironment()
 #include "MegaregionGameMode.h"
 #include "Engine/DirectionalLight.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "Components/ExponentialHeightFogComponent.h"
 
 void AMasterSimulationController::Tick(float DeltaTime)
 {

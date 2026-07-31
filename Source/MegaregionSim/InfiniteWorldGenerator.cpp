@@ -20,7 +20,7 @@ AInfiniteWorldGenerator::AInfiniteWorldGenerator()
 	MainTrackSpline->AddSplinePoint(FVector(1000,0,0), ESplineCoordinateSpace::World); // Initial direction
 }
 
-static float GetProceduralTerrainZ(float X, float Y) {
+float AInfiniteWorldGenerator::GetProceduralTerrainZ(float X, float Y) {
     float NoiseScale = 0.00002f;
     float Mountains = FMath::PerlinNoise2D(FVector2D(X * NoiseScale, Y * NoiseScale)) * 10000.0f;
     float Details = FMath::PerlinNoise2D(FVector2D(X * NoiseScale * 5.0f, Y * NoiseScale * 5.0f)) * 3000.0f;
