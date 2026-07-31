@@ -143,7 +143,8 @@ void AOpenWorldGraphGenerator::ConnectCitiesAStar(int32 NodeA, int32 NodeB)
 			}
 		}
 		
-		ExpressTrackForward->SetSplinePointRoll(PointIndex, RollAngle, ESplineCoordinateSpace::World, true);
+		FVector LocalUp = FRotator(0.0f, 0.0f, RollAngle).RotateVector(FVector::UpVector);
+		ExpressTrackForward->SetUpVectorAtSplinePoint(PointIndex, LocalUp, ESplineCoordinateSpace::Local, true);
 	}
 }
 
