@@ -17,6 +17,7 @@ class UWidgetComponent;
 class USpotLightComponent;
 class UNiagaraComponent;
 class USplineComponent;
+class AMegaregionGameMode;
 
 UCLASS(Blueprintable)
 class MEGAREGIONSIM_API ATrainPawn : public APawn
@@ -158,4 +159,11 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX")
 	UNiagaraComponent* CatenarySparks;
+
+	/** True when train is on the parallel track (toggled via turnout) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
+	bool bOnParallelTrack = false;
+
+	/** Lateral offset for parallel track in cm (3500 = 35m) */
+	float ParallelTrackOffset = 3500.0f;
 };

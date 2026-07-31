@@ -16,6 +16,11 @@ AWorldChunk::AWorldChunk()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PineAsset(TEXT("StaticMesh'/Game/FinalAssets/The_Pine_Tree.The_Pine_Tree'"));
 	if (PineAsset.Succeeded()) PineTreeISM->SetStaticMesh(PineAsset.Object);
 
+	BroadleafTreeISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("BroadleafTreeISM"));
+	BroadleafTreeISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> BroadleafAsset(TEXT("StaticMesh'/Game/FinalAssets/Broadleaf_Tree.Broadleaf_Tree'"));
+	if (BroadleafAsset.Succeeded()) BroadleafTreeISM->SetStaticMesh(BroadleafAsset.Object);
+
 	GrassISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GrassISM"));
 	GrassISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassAsset(TEXT("StaticMesh'/Game/FinalAssets/Grass_patch.Grass_patch'"));
@@ -26,6 +31,16 @@ AWorldChunk::AWorldChunk()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SkyAsset(TEXT("StaticMesh'/Game/FinalAssets/Skyscraper.Skyscraper'"));
 	if (SkyAsset.Succeeded()) SkyscraperISM->SetStaticMesh(SkyAsset.Object);
 	
+	SmallHouseISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SmallHouseISM"));
+	SmallHouseISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SmallHouseAsset(TEXT("StaticMesh'/Game/FinalAssets/Small_House_.Small_House_'"));
+	if (SmallHouseAsset.Succeeded()) SmallHouseISM->SetStaticMesh(SmallHouseAsset.Object);
+
+	FactoryISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FactoryISM"));
+	FactoryISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> FactoryAsset(TEXT("StaticMesh'/Game/FinalAssets/Factory_building.Factory_building'"));
+	if (FactoryAsset.Succeeded()) FactoryISM->SetStaticMesh(FactoryAsset.Object);
+
 	TrackMeshISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TrackMeshISM"));
 	TrackMeshISM->SetupAttachment(RootComponent);
 	// Enable collision so the train can physically sit on the tracks
@@ -48,6 +63,36 @@ AWorldChunk::AWorldChunk()
 	SignalISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SignalAsset(TEXT("StaticMesh'/Game/FinalAssets/Modern_LED_Signal.Modern_LED_Signal'"));
 	if (SignalAsset.Succeeded()) SignalISM->SetStaticMesh(SignalAsset.Object);
+
+	CrossingISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("CrossingISM"));
+	CrossingISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CrossingAsset(TEXT("StaticMesh'/Game/FinalAssets/Railway_Crossing.Railway_Crossing'"));
+	if (CrossingAsset.Succeeded()) CrossingISM->SetStaticMesh(CrossingAsset.Object);
+
+	CatenaryISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("CatenaryISM"));
+	CatenaryISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CatenaryAsset(TEXT("StaticMesh'/Game/FinalAssets/Catenary_Pole.Catenary_Pole'"));
+	if (CatenaryAsset.Succeeded()) CatenaryISM->SetStaticMesh(CatenaryAsset.Object);
+
+	MilepostISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("MilepostISM"));
+	MilepostISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> MilepostAsset(TEXT("StaticMesh'/Game/FinalAssets/Milepost_Marker.Milepost_Marker'"));
+	if (MilepostAsset.Succeeded()) MilepostISM->SetStaticMesh(MilepostAsset.Object);
+
+	TurnoutISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("TurnoutISM"));
+	TurnoutISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TurnoutAsset(TEXT("StaticMesh'/Game/FinalAssets/Turnout_Mesh.Turnout_Mesh'"));
+	if (TurnoutAsset.Succeeded()) TurnoutISM->SetStaticMesh(TurnoutAsset.Object);
+
+	StationISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("StationISM"));
+	StationISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> StationAsset(TEXT("StaticMesh'/Game/FinalAssets/Large_Passenger_Terminal.Large_Passenger_Terminal'"));
+	if (StationAsset.Succeeded()) StationISM->SetStaticMesh(StationAsset.Object);
+
+	RuralStationISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("RuralStationISM"));
+	RuralStationISM->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> RuralStationAsset(TEXT("StaticMesh'/Game/FinalAssets/Small_Rural_Station.Small_Rural_Station'"));
+	if (RuralStationAsset.Succeeded()) RuralStationISM->SetStaticMesh(RuralStationAsset.Object);
 }
 
 void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineComponent* InSpline, float StartDistance, float EndDistance)
@@ -125,12 +170,15 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 
 			if (bNature)
 			{
-				// ── Pine trees ───────────────────────────────────────────────
-				T.SetScale3D(FVector(FMath::RandRange(0.7f, 2.2f))); // varied sizes
+				bool bUseBroadleaf = FMath::RandBool();
+				T.SetScale3D(FVector(FMath::RandRange(0.7f, 2.2f)));
 				T.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
-				PineTreeISM->AddInstance(T);
-
-				// ── Dense grass underneath each tree (15 patches) ────────────
+				if (bUseBroadleaf)
+					BroadleafTreeISM->AddInstance(T);
+				else
+					PineTreeISM->AddInstance(T);
+				
+				// Dense grass underneath each tree (15 patches)
 				for (int g = 0; g < 15; g++)
 				{
 					float GX = SpawnLoc.X + FMath::RandRange(-1500.0f, 1500.0f);
@@ -146,10 +194,29 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 			}
 			else if (bUrban)
 			{
-				// Skyscrapers on exact ground height
-				T.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 6.0f)));
-				T.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0)));
-				SkyscraperISM->AddInstance(T);
+				if (FMath::Abs(Offset) < 15000.0f)
+				{
+					// Close to track = small houses and factories
+					if (FMath::RandBool())
+					{
+						T.SetScale3D(FVector(FMath::RandRange(0.8f, 1.5f)));
+						T.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
+						SmallHouseISM->AddInstance(T);
+					}
+					else
+					{
+						T.SetScale3D(FVector(FMath::RandRange(1.0f, 2.0f)));
+						T.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0)));
+						FactoryISM->AddInstance(T);
+					}
+				}
+				else
+				{
+					// Far from track = skyscrapers
+					T.SetScale3D(FVector(1.0f, 1.0f, FMath::RandRange(1.0f, 6.0f)));
+					T.SetRotation(FQuat(FRotator(0, FMath::RandBool() ? 0.0f : 90.0f, 0)));
+					SkyscraperISM->AddInstance(T);
+				}
 			}
 		}
 	}
@@ -160,94 +227,136 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 	const float TrackSegLen = 2500.0f; // 25m per segment
 
 	// Compute scale from mesh bounding box Y-axis (track mesh is modeled sideways)
-	float ScaleY = 1.0f;
+	float ScaleAlongTrack = 1.0f;
 	if (TrackMeshISM->GetStaticMesh())
 	{
-		float MeshLen = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize().Y;
+		FVector MeshSize = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize();
+		float MeshLen = FMath::Max3(MeshSize.X, MeshSize.Y, MeshSize.Z);
 		if (MeshLen > 1.0f) // safe guard: only override if mesh bounds are non-zero
 		{
-			ScaleY = TrackSegLen / MeshLen;
+			ScaleAlongTrack = TrackSegLen / MeshLen;
 		}
 	}
 	// Hard fallback: if asset failed to load or bounds came back zero, use 1.0
-	if (ScaleY <= 0.0f || ScaleY > 1000.0f) ScaleY = 1.0f;
+	if (ScaleAlongTrack <= 0.0f || ScaleAlongTrack > 1000.0f) ScaleAlongTrack = 1.0f;
 
 	for (float Dist = StartDist; Dist < EndDist; Dist += TrackSegLen)
 	{
 		FVector  StartLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		FRotator StartRot = Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		StartRot.Roll = 0.0f;
-		// Track mesh is built sideways in Blender — rotate 90° so it faces forward
-		StartRot.Yaw += 90.0f;
 
 		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 
-		// ── Left rail ────────────────────────────────────────────────────────
-		FTransform T1;
-		T1.SetLocation(StartLoc - (RightVec * 750.0f));  // 7.5m left of centre
-		T1.SetRotation(StartRot.Quaternion());
-		T1.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
-		TrackMeshISM->AddInstance(T1);
+		// Check if this is a bridge segment
+		float GroundZ = GetGroundHeightForChunk(GetWorld(), StartLoc.X, StartLoc.Y, StartLoc.Z);
+		float ZDiff = StartLoc.Z - GroundZ;
+		bool bIsBridge = (ZDiff > 500.0f);
+		bool bIsTunnel = (ZDiff < -500.0f);
 
-		// ── Right rail ───────────────────────────────────────────────────────
-		FTransform T2;
-		T2.SetLocation(StartLoc + (RightVec * 750.0f));  // 7.5m right of centre
-		T2.SetRotation(StartRot.Quaternion());
-		T2.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
-		TrackMeshISM->AddInstance(T2);
+		// Main track — skip if bridge (Bridge_Mesh already has tracks)
+		if (!bIsBridge)
+		{
+			FTransform T1;
+			T1.SetLocation(StartLoc);
+			T1.SetRotation(StartRot.Quaternion());
+			T1.SetScale3D(FVector(ScaleAlongTrack));
+			TrackMeshISM->AddInstance(T1);
+		}
 
-		// ── Parallel second track (far-side) 20m right ───────────────────────
-		FTransform T3;
-		T3.SetLocation(StartLoc + (RightVec * 2750.0f));
-		T3.SetRotation(StartRot.Quaternion());
-		T3.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
-		TrackMeshISM->AddInstance(T3);
+		// Parallel track
+		FVector ParallelLoc = StartLoc + (RightVec * 3500.0f);
+		float ParallelGroundZ = GetGroundHeightForChunk(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
+		float ParallelZDiff = ParallelLoc.Z - ParallelGroundZ;
+		bool bParallelIsBridge = (ParallelZDiff > 500.0f);
 
-		FTransform T4;
-		T4.SetLocation(StartLoc + (RightVec * 4250.0f));
-		T4.SetRotation(StartRot.Quaternion());
-		T4.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
-		TrackMeshISM->AddInstance(T4);
+		if (!bParallelIsBridge)
+		{
+			FTransform T2;
+			T2.SetLocation(ParallelLoc);
+			T2.SetRotation(StartRot.Quaternion());
+			T2.SetScale3D(FVector(ScaleAlongTrack));
+			TrackMeshISM->AddInstance(T2);
+		}
 
-		// ── Main Track Bridge/Tunnel ──────────────────────────────────────────
-		float GroundZ1 = GetGroundHeightForChunk(GetWorld(), StartLoc.X, StartLoc.Y, StartLoc.Z);
-		float ZDiff1 = StartLoc.Z - GroundZ1;
-		if (ZDiff1 > 500.0f)
+		// Bridge
+		if (bIsBridge)
 		{
 			FTransform BridgeTransform;
 			BridgeTransform.SetLocation(StartLoc);
 			BridgeTransform.SetRotation(StartRot.Quaternion());
-			BridgeTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack));
 			BridgeISM->AddInstance(BridgeTransform);
 		}
-		else if (ZDiff1 < -500.0f)
+		else if (bIsTunnel)
 		{
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(StartLoc);
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			TunnelTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
 
-		// ── Parallel Track Bridge/Tunnel ──────────────────────────────────────
-		FVector ParallelLoc = StartLoc + (RightVec * 3500.0f);
-		float GroundZ2 = GetGroundHeightForChunk(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
-		float ZDiff2 = ParallelLoc.Z - GroundZ2;
-		if (ZDiff2 > 500.0f)
+		// Same for parallel track bridge/tunnel
+		if (bParallelIsBridge)
 		{
 			FTransform BridgeTransform;
 			BridgeTransform.SetLocation(ParallelLoc);
 			BridgeTransform.SetRotation(StartRot.Quaternion());
-			BridgeTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack));
 			BridgeISM->AddInstance(BridgeTransform);
 		}
-		else if (ZDiff2 < -500.0f)
+		else if (ParallelZDiff < -500.0f)
 		{
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(ParallelLoc);
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			TunnelTransform.SetScale3D(FVector(1.0f, ScaleY, 1.0f));
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
 			TunnelISM->AddInstance(TunnelTransform);
+		}
+
+		// Turnout every 5km
+		if (FMath::Fmod(Dist, 500000.0f) < TrackSegLen * 0.5f)
+		{
+			// Turnout between main and parallel track
+			FVector TurnoutLoc = StartLoc + (RightVec * 1750.0f); // halfway between main and parallel
+			FTransform TurnoutTransform;
+			TurnoutTransform.SetLocation(TurnoutLoc);
+			TurnoutTransform.SetRotation(StartRot.Quaternion());
+			TurnoutTransform.SetScale3D(FVector(1.0f));
+			TurnoutISM->AddInstance(TurnoutTransform);
+		}
+
+		// Catenary poles every 250m (25000 units)
+		if (FMath::Fmod(Dist, 25000.0f) < TrackSegLen * 0.5f)
+		{
+			FVector CatenaryLoc = StartLoc + (RightVec * 500.0f); // 5m right of center
+			FTransform CatenaryTransform;
+			CatenaryTransform.SetLocation(CatenaryLoc);
+			CatenaryTransform.SetRotation(StartRot.Quaternion());
+			CatenaryTransform.SetScale3D(FVector(1.0f));
+			CatenaryISM->AddInstance(CatenaryTransform);
+		}
+
+		// Milepost every 1km (100000 units)
+		if (FMath::Fmod(Dist, 100000.0f) < TrackSegLen * 0.5f)
+		{
+			FVector MilepostLoc = StartLoc - (RightVec * 500.0f); // 5m left of center
+			FTransform MilepostTransform;
+			MilepostTransform.SetLocation(MilepostLoc);
+			MilepostTransform.SetRotation(StartRot.Quaternion());
+			MilepostTransform.SetScale3D(FVector(0.5f));
+			MilepostISM->AddInstance(MilepostTransform);
+		}
+
+		// Railway crossing every 4km (400000 units)
+		if (FMath::Fmod(Dist, 400000.0f) < TrackSegLen * 0.5f)
+		{
+			FTransform CrossingTransform;
+			CrossingTransform.SetLocation(StartLoc);
+			CrossingTransform.SetRotation(StartRot.Quaternion());
+			CrossingTransform.SetScale3D(FVector(1.0f));
+			CrossingISM->AddInstance(CrossingTransform);
 		}
 
 		// ── Signal every 2km via a real ARailwaySignal actor ─────────────────
@@ -262,21 +371,32 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		}
 	}
 
-	// ── Procedural Stations (every 10 miles in Urban zones) ──────────────────
+	// Procedural Stations every 16km
 	float StationFmod = FMath::Fmod(StartDist, 1600000.0f);
 	if (StationFmod < 100.0f)
 	{
 		FVector Loc = Spline->GetLocationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
 		EZoningClassification Zone = UMegaregionZoningGenerator::GetZoningAtLocation(FVector2D(Loc.X, Loc.Y));
+		FVector Right = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		FRotator SplineRot = Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+		
 		if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
 		{
-			// Use skyscraper ISM as platform proxy at small scale until real asset is available
-			FVector Right = Spline->GetRightVectorAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World);
+			// Large passenger terminal
 			FTransform StTr;
-			StTr.SetLocation(Loc + Right * 1200.0f);
-			StTr.SetRotation(Spline->GetRotationAtDistanceAlongSpline(StartDist, ESplineCoordinateSpace::World).Quaternion());
-			StTr.SetScale3D(FVector(3.0f, 8.0f, 0.1f)); // flat platform slab
-			SkyscraperISM->AddInstance(StTr);
+			StTr.SetLocation(Loc + Right * 2000.0f); // 20m from track
+			StTr.SetRotation(SplineRot.Quaternion());
+			StTr.SetScale3D(FVector(1.0f));
+			StationISM->AddInstance(StTr);
+		}
+		else
+		{
+			// Small rural station
+			FTransform StTr;
+			StTr.SetLocation(Loc + Right * 1500.0f); // 15m from track
+			StTr.SetRotation(SplineRot.Quaternion());
+			StTr.SetScale3D(FVector(1.0f));
+			RuralStationISM->AddInstance(StTr);
 		}
 	}
 }

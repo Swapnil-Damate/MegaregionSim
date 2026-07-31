@@ -1,6 +1,8 @@
 #include "TrainSimHUD.h"
 #include "Engine/Canvas.h"
 #include "Engine/Font.h"
+#include "GameFramework/PlayerController.h"
+#include "MegaregionGameMode.h"
 
 ATrainSimHUD::ATrainSimHUD()
 {
@@ -36,6 +38,13 @@ void ATrainSimHUD::DrawHUD()
 	Super::DrawHUD();
 
 	if (!Canvas) return;
+
+	if (bShowStartMenu)
+	{
+		DrawStartMenu();
+		HandleStartMenuInput();
+		return; // Don't draw cab HUD while start menu is showing
+	}
 
 	// Panel anchored to bottom-right corner
 	const float PanelW = 380.f;
@@ -107,4 +116,112 @@ void ATrainSimHUD::DrawHUD()
 	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.45f), PanelX - 10.f, Y - 3.f, PanelW, 24.f);
 	DrawText(TEXT("W/S: Throttle   Space: Brakes   L: Lights   J: Track"),
 		FLinearColor(0.5f, 0.5f, 0.5f, 1.0f), PanelX, Y, nullptr, 1.15f);
+}
+
+void ATrainSimHUD::HandleStartMenuInput()
+{
+    APlayerController* PC = GetOwningPlayerController();
+    if (!PC) return;
+    
+    // Number keys 1-4 for engine selection
+    if (PC->WasInputKeyJustPressed(EKeys::One))   MenuEngineSelection = 0;
+    if (PC->WasInputKeyJustPressed(EKeys::Two))   MenuEngineSelection = 1;
+    if (PC->WasInputKeyJustPressed(EKeys::Three)) MenuEngineSelection = 2;
+    if (PC->WasInputKeyJustPressed(EKeys::Four))  MenuEngineSelection = 3;
+    
+    // Q/E keys for car type
+    if (PC->WasInputKeyJustPressed(EKeys::Q))
+        MenuCarSelection = (MenuCarSelection + 3) % 4; // prev
+    if (PC->WasInputKeyJustPressed(EKeys::E))
+        MenuCarSelection = (MenuCarSelection + 1) % 4; // next
+    
+    // Left/Right arrows for car count
+    const int32 CarCounts[] = {1, 2, 4, 6, 8, 12};
+    if (PC->WasInputKeyJustPressed(EKeys::Left))
+        MenuCarCountIndex = FMath::Max(0, MenuCarCountIndex - 1);
+    if (PC->WasInputKeyJustPressed(EKeys::Right))
+        MenuCarCountIndex = FMath::Min(5, MenuCarCountIndex + 1);
+    
+    // Enter to confirm
+    if (PC->WasInputKeyJustPressed(EKeys::Enter))
+    {
+        bShowStartMenu = false;
+        
+        // Store selections in GameMode
+        if (AMegaregionGameMode* GM = Cast<AMegaregionGameMode>(GetWorld()->GetAuthGameMode()))
+        {
+            GM->SelectedEngineIndex = MenuEngineSelection;
+            GM->SelectedCarType = MenuCarSelection;
+            GM->SelectedCarCount = CarCounts[MenuCarCountIndex];
+            GM->bStartMenuComplete = true;
+        }
+    }
+}
+
+void ATrainSimHUD::DrawStartMenu()
+{
+    // Semi-transparent dark background
+    DrawRect(FLinearColor(0.0f, 0.02f, 0.05f, 0.92f), 0, 0, Canvas->SizeX, Canvas->SizeY);
+    
+    float CenterX = Canvas->SizeX * 0.5f;
+    float Y = Canvas->SizeY * 0.15f;
+    
+    // Title
+    FString Title = TEXT("MEGAREGION SIM — TRAIN CONFIGURATION");
+    DrawText(Title, FLinearColor(0.0f, 0.8f, 1.0f), CenterX - 280.0f, Y, GEngine->GetLargeFont());
+    
+    Y += 60.0f;
+    DrawText(TEXT("═══════════════════════════════════════════"), FLinearColor(0.3f, 0.3f, 0.4f), CenterX - 280.0f, Y, GEngine->GetSmallFont());
+    Y += 30.0f;
+    
+    // Engine selection
+    const FString EngineNames[] = {
+        TEXT("Diesel Locomotive"),
+        TEXT("Steam Locomotive"),
+        TEXT("Bullet Train (HSR)"),
+        TEXT("Urban Metro Tram")
+    };
+    
+    DrawText(TEXT("ENGINE  [Press 1-4]"), FLinearColor(0.6f, 0.6f, 0.7f), CenterX - 280.0f, Y, GEngine->GetSmallFont());
+    Y += 25.0f;
+    
+    for (int32 i = 0; i < 4; i++)
+    {
+        FLinearColor Color = (i == MenuEngineSelection) ? FLinearColor(0.0f, 1.0f, 0.5f) : FLinearColor(0.4f, 0.4f, 0.5f);
+        FString Prefix = (i == MenuEngineSelection) ? TEXT("► ") : TEXT("  ");
+        FString Label = FString::Printf(TEXT("%s%d. %s"), *Prefix, i + 1, *EngineNames[i]);
+        DrawText(Label, Color, CenterX - 260.0f, Y, GEngine->GetSmallFont());
+        Y += 22.0f;
+    }
+    
+    Y += 15.0f;
+    
+    // Car type selection
+    const FString CarTypeNames[] = {
+        TEXT("Passenger Coach"),
+        TEXT("Liquid Tanker"),
+        TEXT("Bulk Hopper"),
+        TEXT("Mixed (Auto)")
+    };
+    
+    DrawText(TEXT("CAR TYPE  [Press Q / E]"), FLinearColor(0.6f, 0.6f, 0.7f), CenterX - 280.0f, Y, GEngine->GetSmallFont());
+    Y += 25.0f;
+    
+    FString CarLabel = FString::Printf(TEXT("◄  %s  ►"), *CarTypeNames[MenuCarSelection]);
+    DrawText(CarLabel, FLinearColor(1.0f, 0.85f, 0.0f), CenterX - 260.0f, Y, GEngine->GetSmallFont());
+    Y += 35.0f;
+    
+    // Car count
+    const int32 CarCounts[] = {1, 2, 4, 6, 8, 12};
+    DrawText(TEXT("CAR COUNT  [Left / Right Arrow]"), FLinearColor(0.6f, 0.6f, 0.7f), CenterX - 280.0f, Y, GEngine->GetSmallFont());
+    Y += 25.0f;
+    
+    FString CountLabel = FString::Printf(TEXT("◄  %d cars  ►"), CarCounts[MenuCarCountIndex]);
+    DrawText(CountLabel, FLinearColor(1.0f, 0.85f, 0.0f), CenterX - 260.0f, Y, GEngine->GetSmallFont());
+    Y += 45.0f;
+    
+    // Confirm
+    DrawText(TEXT("═══════════════════════════════════════════"), FLinearColor(0.3f, 0.3f, 0.4f), CenterX - 280.0f, Y, GEngine->GetSmallFont());
+    Y += 30.0f;
+    DrawText(TEXT("Press ENTER to start"), FLinearColor(0.0f, 1.0f, 0.5f), CenterX - 120.0f, Y, GEngine->GetLargeFont());
 }

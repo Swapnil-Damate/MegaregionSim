@@ -24,10 +24,19 @@ protected:
 	UInstancedStaticMeshComponent* PineTreeISM;
 	
 	UPROPERTY()
+	UInstancedStaticMeshComponent* BroadleafTreeISM;
+
+	UPROPERTY()
 	UInstancedStaticMeshComponent* GrassISM;
 	
 	UPROPERTY()
 	UInstancedStaticMeshComponent* SkyscraperISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* SmallHouseISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* FactoryISM;
 
 	UPROPERTY()
 	UInstancedStaticMeshComponent* TunnelISM;
@@ -37,9 +46,27 @@ protected:
 
 	UPROPERTY()
 	UInstancedStaticMeshComponent* TrackMeshISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* TurnoutISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* CatenaryISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* MilepostISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* CrossingISM;
 	
 	UPROPERTY()
 	UInstancedStaticMeshComponent* SignalISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* StationISM;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* RuralStationISM;
 
 	UPROPERTY()
 	TArray<USplineMeshComponent*> SplineMeshes;

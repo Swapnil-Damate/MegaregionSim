@@ -21,6 +21,15 @@ public:
 		float BrakeCylPSI, int32 Balance, const FString& SignalState, bool bHeadlightsOn);
 
 private:
+	// Start menu state
+	bool bShowStartMenu = true;
+	int32 MenuEngineSelection = 0; // 0-3
+	int32 MenuCarSelection = 3;    // 0-3  
+	int32 MenuCarCountIndex = 4;   // index into {1,2,4,6,8,12}
+
+	void DrawStartMenu();
+	void HandleStartMenuInput();
+
 	// Latest cached values for thread-safe DrawHUD rendering
 	float CachedSpeed        = 0.0f;
 	float CachedThrottle     = 0.0f;

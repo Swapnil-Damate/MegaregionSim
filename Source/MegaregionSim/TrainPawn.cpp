@@ -2,6 +2,7 @@
 // TrainPawn.cpp — Complete definitive rewrite of movement and consist systems
 // ─────────────────────────────────────────────────────────────────────────────
 #include "TrainPawn.h"
+#include "MegaregionGameMode.h"
 #include "TrainCar.h"
 #include "TrainSimHUD.h"
 #include "Math/UnrealMathUtility.h"
@@ -207,54 +208,99 @@ void ATrainPawn::BeginPlay()
 // ─────────────────────────────────────────────────────────────────────────────
 void ATrainPawn::SpawnConsist()
 {
-	if (GetLocalRole() != ROLE_Authority) return;
-
-	ConsistCars.Empty();
-
-	const float CarSpacing  = 2300.0f; // 23m per car slot (20m car + 3m gap)
-	FVector     ForwardVec  = GetActorForwardVector();
-	FRotator    LocoRot     = GetActorRotation();
-
-	for (int i = 0; i < 8; i++)
-	{
-		FVector SpawnLoc;
-		FRotator SpawnRot;
-		
-		if (MainTrackSplineRef)
-		{
-			float CarDist = CurrentDistanceAlongSpline - CarSpacing * (i + 1);
-			SpawnLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
-			SpawnRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
-			SpawnLoc.Z += 100.0f;
-		}
-		else
-		{
-			SpawnLoc = GetActorLocation() - ForwardVec * CarSpacing * (i + 1);
-			SpawnLoc.Z = GetActorLocation().Z;
-			SpawnRot = LocoRot;
-		}
-
-		FActorSpawnParameters SP;
-		SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		ATrainCar* NewCar = GetWorld()->SpawnActor<ATrainCar>(ATrainCar::StaticClass(), SpawnLoc, SpawnRot, SP);
-		if (NewCar)
-		{
-			// Make car purely kinematic — we position it in Tick manually
-			NewCar->CarBody->SetSimulatePhysics(false);
-			NewCar->CarBody->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
-			// Load the real assets dynamically (alternating hoppers, tankers, and passenger coaches)
-			NewCar->ConfigureCarVisuals(i);
-
-			// Wire up brake pipe for pressure propagation
-			NewCar->FrontAttachedCar = (ConsistCars.Num() > 0)
-				? (AActor*)ConsistCars.Last()
-				: (AActor*)this;
-
-			ConsistCars.Add(NewCar);
-		}
-	}
+    if (GetLocalRole() != ROLE_Authority) return;
+    
+    // Wait for start menu to be completed
+    AMegaregionGameMode* GM = Cast<AMegaregionGameMode>(GetWorld()->GetAuthGameMode());
+    if (GM && !GM->bStartMenuComplete)
+    {
+        // Re-check in 0.5s
+        FTimerHandle RetryTimer;
+        GetWorldTimerManager().SetTimer(RetryTimer, this, &ATrainPawn::SpawnConsist, 0.5f, false);
+        return;
+    }
+    
+    int32 NumCars = (GM) ? GM->SelectedCarCount : 8;
+    int32 CarType = (GM) ? GM->SelectedCarType : 3; // 3 = Mixed
+    int32 EngineIdx = (GM) ? GM->SelectedEngineIndex : 0;
+    
+    // Load the selected locomotive mesh
+    UStaticMeshComponent* TrainMesh = FindComponentByClass<UStaticMeshComponent>();
+    if (TrainMesh)
+    {
+        UStaticMesh* EngMesh = nullptr;
+        switch (EngineIdx)
+        {
+        case 0: EngMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FinalAssets/Diesel_Locomotive.Diesel_Locomotive'")); break;
+        case 1: EngMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FinalAssets/Steam_Locomotive.Steam_Locomotive'")); break;
+        case 2: EngMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FinalAssets/Bullet_Train.Bullet_Train'")); break;
+        case 3: EngMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Game/FinalAssets/Urban_Metro_Tram.Urban_Metro_Tram'")); break;
+        }
+        if (EngMesh)
+        {
+            TrainMesh->SetStaticMesh(EngMesh);
+            TrainMesh->SetRelativeScale3D(FVector(1.0f));
+        }
+    }
+    
+    ConsistCars.Empty();
+    
+    const float CarSpacing = 1050.0f; // 10.5m per car slot (tight realistic coupling)
+    FVector ForwardVec = GetActorForwardVector();
+    FRotator LocoRot = GetActorRotation();
+    
+    for (int32 i = 0; i < NumCars; i++)
+    {
+        FVector SpawnLoc;
+        FRotator SpawnRot;
+        
+        if (MainTrackSplineRef)
+        {
+            float CarDist = CurrentDistanceAlongSpline - CarSpacing * (i + 1);
+            SpawnLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+            SpawnRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+            SpawnLoc.Z += 100.0f;
+            
+            // Apply parallel track offset if needed
+            if (bOnParallelTrack)
+            {
+                FVector Right = MainTrackSplineRef->GetRightVectorAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+                SpawnLoc += Right * ParallelTrackOffset;
+            }
+        }
+        else
+        {
+            SpawnLoc = GetActorLocation() - ForwardVec * CarSpacing * (i + 1);
+            SpawnLoc.Z = GetActorLocation().Z;
+            SpawnRot = LocoRot;
+        }
+        
+        FActorSpawnParameters SP;
+        SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        
+        ATrainCar* NewCar = GetWorld()->SpawnActor<ATrainCar>(ATrainCar::StaticClass(), SpawnLoc, SpawnRot, SP);
+        if (NewCar)
+        {
+            NewCar->CarBody->SetSimulatePhysics(false);
+            NewCar->CarBody->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+            
+            // Configure car visuals based on selection
+            if (CarType == 3) // Mixed
+            {
+                NewCar->ConfigureCarVisuals(i); // Uses i % 3 for variety
+            }
+            else
+            {
+                NewCar->ConfigureCarVisuals(CarType); // All same type
+            }
+            
+            NewCar->FrontAttachedCar = (ConsistCars.Num() > 0)
+                ? (AActor*)ConsistCars.Last()
+                : (AActor*)this;
+            
+            ConsistCars.Add(NewCar);
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -316,16 +362,19 @@ void ATrainPawn::Tick(float DeltaTime)
 		FVector NewLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
 		FRotator NewRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
 		
-		// Add relative 90 deg Yaw rotation because train meshes might be built sideways, wait!
-		// Let's check: the diesel locomotive mesh import rotation. In the screenshots, the train is aligned with the track direction.
-		// Wait! The spline direction itself is along the X-axis (forward). If the train is also along the X-axis, the rotation is correct!
-		// Let's keep it as is.
+		// Apply parallel track lateral offset
+		if (bOnParallelTrack)
+		{
+		    FVector RightVec = MainTrackSplineRef->GetRightVectorAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
+		    NewLoc += RightVec * ParallelTrackOffset;
+		}
+
 		NewLoc.Z += 100.0f; // Offset to sit on tracks
 		
 		SetActorLocationAndRotation(NewLoc, NewRot);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 2300.0f;
+		const float CarSpacing = 1050.0f; // 10.5m per car slot (tight realistic coupling)
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
@@ -333,6 +382,13 @@ void ATrainPawn::Tick(float DeltaTime)
 				float CarDist = CurrentDistanceAlongSpline - CarSpacing * (i + 1);
 				FVector CarLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
 				FRotator CarRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+				
+				if (bOnParallelTrack)
+				{
+				    FVector CarRight = MainTrackSplineRef->GetRightVectorAtDistanceAlongSpline(CarDist, ESplineCoordinateSpace::World);
+				    CarLoc += CarRight * ParallelTrackOffset;
+				}
+				
 				CarLoc.Z += 100.0f;
 				ConsistCars[i]->SetActorLocationAndRotation(CarLoc, CarRot);
 			}
@@ -347,7 +403,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		SetActorLocation(NewLoc);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 2300.0f;
+		const float CarSpacing = 1050.0f; // 10.5m per car slot (tight realistic coupling)
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
@@ -490,11 +546,34 @@ void ATrainPawn::PlayHorn()
 
 void ATrainPawn::SwitchTrack()
 {
-	if (GetLocalRole() < ROLE_Authority) { Server_SwitchTrack(); return; }
-	FVector NewLoc = GetActorLocation() + GetActorRightVector() * 2000.0f;
-	NewLoc.Z = 130.0f;
-	SetActorLocation(NewLoc);
-	UE_LOG(LogTemp, Warning, TEXT("Track switch! Moved 20m right."));
+    if (GetLocalRole() < ROLE_Authority) { Server_SwitchTrack(); return; }
+    
+    if (!MainTrackSplineRef) return;
+    
+    // Find nearest turnout ahead
+    AMegaregionGameMode* GM = Cast<AMegaregionGameMode>(GetWorld()->GetAuthGameMode());
+    if (!GM) return;
+    
+    bool bFoundTurnout = false;
+    for (float TurnoutDist : GM->TurnoutDistances)
+    {
+        float DistToTurnout = TurnoutDist - CurrentDistanceAlongSpline;
+        if (DistToTurnout > 0.0f && DistToTurnout < 20000.0f) // Within 200m ahead
+        {
+            bFoundTurnout = true;
+            break;
+        }
+    }
+    
+    if (bFoundTurnout)
+    {
+        bOnParallelTrack = !bOnParallelTrack;
+        UE_LOG(LogTemp, Warning, TEXT("Track switch! Now on %s track."), bOnParallelTrack ? TEXT("PARALLEL") : TEXT("MAIN"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No turnout within 200m ahead. Cannot switch."));
+    }
 }
 void ATrainPawn::Server_SwitchTrack_Implementation() { SwitchTrack(); }
 bool ATrainPawn::Server_SwitchTrack_Validate() { return true; }
