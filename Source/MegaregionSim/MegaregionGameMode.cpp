@@ -26,9 +26,7 @@ AMegaregionGameMode::AMegaregionGameMode()
 
 void AMegaregionGameMode::BeginPlay()
 {
-	Super::BeginPlay();
-
-	// Ensure the OpenWorldGraphGenerator exists in the world
+	// Ensure the OpenWorldGraphGenerator exists in the world BEFORE pawn spawns
 	AActor* GraphGen = UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass());
 	if (!GraphGen)
 	{
@@ -37,7 +35,7 @@ void AMegaregionGameMode::BeginPlay()
 		GetWorld()->SpawnActor<AOpenWorldGraphGenerator>(AOpenWorldGraphGenerator::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
 	}
 
-	// Ensure the Weather System exists in the world
+	// Ensure the Weather System exists in the world BEFORE pawn spawns
 	AActor* WeatherSys = UGameplayStatics::GetActorOfClass(GetWorld(), AMegaregionWeatherSystem::StaticClass());
 	if (!WeatherSys)
 	{
@@ -45,4 +43,7 @@ void AMegaregionGameMode::BeginPlay()
 		SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		GetWorld()->SpawnActor<AMegaregionWeatherSystem>(AMegaregionWeatherSystem::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
 	}
+
+	// Now call Super so all pawns run BeginPlay() and can find the generated tracks
+	Super::BeginPlay();
 }

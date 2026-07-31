@@ -1,5 +1,6 @@
 #include "OpenWorldGraphGenerator.h"
 #include "Math/UnrealMathUtility.h"
+#include "WorldChunk.h"
 
 AOpenWorldGraphGenerator::AOpenWorldGraphGenerator()
 {
@@ -108,6 +109,8 @@ void AOpenWorldGraphGenerator::ConnectCitiesAStar(int32 NodeA, int32 NodeB)
 	}
 	
 	// Add spline points and calculate Banked Curves
+	float StartDist = ExpressTrackForward->GetSplineLength();
+	
 	for (int32 i = 0; i < PathPoints.Num(); i++)
 	{
 		ExpressTrackForward->AddSplinePoint(PathPoints[i], ESplineCoordinateSpace::World);
@@ -145,6 +148,17 @@ void AOpenWorldGraphGenerator::ConnectCitiesAStar(int32 NodeA, int32 NodeB)
 		
 		FVector LocalUp = FRotator(0.0f, 0.0f, RollAngle).RotateVector(FVector::UpVector);
 		ExpressTrackForward->SetUpVectorAtSplinePoint(PointIndex, LocalUp, ESplineCoordinateSpace::Local, true);
+	}
+	
+	// Update spline math and tangency so WorldChunk can build physical meshes along it
+	ExpressTrackForward->UpdateSpline();
+	
+	// 3. Spawn a WorldChunk to instantly generate trees and track meshes for this segment
+	float EndDist = ExpressTrackForward->GetSplineLength();
+	AWorldChunk* Chunk = GetWorld()->SpawnActor<AWorldChunk>(AWorldChunk::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
+	if (Chunk)
+	{
+		Chunk->InitializeChunk(this, ExpressTrackForward, StartDist, EndDist);
 	}
 }
 
