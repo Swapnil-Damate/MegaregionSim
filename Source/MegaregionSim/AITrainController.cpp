@@ -3,6 +3,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "MegaregionZoningGenerator.h"
 #include "LevelCrossing.h"
+#include "Engine/OverlapResult.h"
+#include "CollisionQueryParams.h"
 
 AAITrainController::AAITrainController()
 {

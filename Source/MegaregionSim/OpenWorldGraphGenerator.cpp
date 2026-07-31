@@ -143,7 +143,7 @@ void AOpenWorldGraphGenerator::ConnectCitiesAStar(int32 NodeA, int32 NodeB)
 			}
 		}
 		
-		ExpressTrackForward->SetRollAtSplinePoint(PointIndex, RollAngle, ESplineCoordinateSpace::World);
+		ExpressTrackForward->SetSplinePointRoll(PointIndex, RollAngle, ESplineCoordinateSpace::World, true);
 	}
 }
 
