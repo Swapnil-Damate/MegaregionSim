@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Engine/ExponentialHeightFog.h"
 #include "MasterSimulationController.generated.h"
 
 class UInstancedStaticMeshComponent;
@@ -33,4 +34,5 @@ public:
 	UInstancedStaticMeshComponent* GrassISM;
 
 private:
+	bool bWeatherApplied = false;
 };

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "TrainFragment.h"
+#include "Engine/TimerHandle.h"
 #include "AutomatedTrainSpawner.generated.h"
 
 UCLASS()
@@ -18,7 +18,8 @@ public:
 	virtual TStatId GetStatId() const override { return TStatId(); }
 
 private:
-	void SpawnVirtualTrains(int32 Count);
+	void CheckStartMenuComplete();
+	void SpawnRealAITrains();
 
-	TArray<FTrainFragment> VirtualTrains;
+	FTimerHandle CheckMenuTimer;
 };

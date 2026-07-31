@@ -22,7 +22,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Selection")
 	int32 SelectedCarCount = 8; // 1, 2, 4, 6, 8, or 12
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Selection")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment Selection")
+	int32 SelectedWeather = 0; // 0=Clear, 1=Foggy, 2=Overcast
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment Selection")
+	int32 SelectedTimeOfDay = 0; // 0=Day, 1=Night
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Game State")
 	bool bStartMenuComplete = false;
 
 	// Turnout distance registry — populated by WorldChunk

@@ -26,6 +26,8 @@ private:
 	int32 MenuEngineSelection = 0; // 0-3
 	int32 MenuCarSelection = 3;    // 0-3  
 	int32 MenuCarCountIndex = 4;   // index into {1,2,4,6,8,12}
+	int32 MenuWeatherSelection = 0; // 0=Clear, 1=Foggy, 2=Overcast
+	int32 MenuTimeSelection = 0; // 0=Day, 1=Night
 
 	void DrawStartMenu();
 	void HandleStartMenuInput();

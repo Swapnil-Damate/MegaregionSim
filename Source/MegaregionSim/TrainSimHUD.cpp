@@ -141,6 +141,18 @@ void ATrainSimHUD::HandleStartMenuInput()
         MenuCarCountIndex = FMath::Max(0, MenuCarCountIndex - 1);
     if (PC->WasInputKeyJustPressed(EKeys::Right))
         MenuCarCountIndex = FMath::Min(5, MenuCarCountIndex + 1);
+
+    // Z/X for Weather
+    if (PC->WasInputKeyJustPressed(EKeys::Z))
+        MenuWeatherSelection = (MenuWeatherSelection + 2) % 3;
+    if (PC->WasInputKeyJustPressed(EKeys::X))
+        MenuWeatherSelection = (MenuWeatherSelection + 1) % 3;
+
+    // C/V for Time
+    if (PC->WasInputKeyJustPressed(EKeys::C))
+        MenuTimeSelection = (MenuTimeSelection + 1) % 2;
+    if (PC->WasInputKeyJustPressed(EKeys::V))
+        MenuTimeSelection = (MenuTimeSelection + 1) % 2;
     
     // Enter to confirm
     if (PC->WasInputKeyJustPressed(EKeys::Enter))
@@ -153,6 +165,8 @@ void ATrainSimHUD::HandleStartMenuInput()
             GM->SelectedEngineIndex = MenuEngineSelection;
             GM->SelectedCarType = MenuCarSelection;
             GM->SelectedCarCount = CarCounts[MenuCarCountIndex];
+            GM->SelectedWeather = MenuWeatherSelection;
+            GM->SelectedTimeOfDay = MenuTimeSelection;
             GM->bStartMenuComplete = true;
         }
     }
@@ -218,7 +232,21 @@ void ATrainSimHUD::DrawStartMenu()
     
     FString CountLabel = FString::Printf(TEXT("◄  %d cars  ►"), CarCounts[MenuCarCountIndex]);
     DrawText(CountLabel, FLinearColor(1.0f, 0.85f, 0.0f), CenterX - 260.0f, Y, GEngine->GetSmallFont());
-    Y += 45.0f;
+    Y += 35.0f;
+
+    // Weather
+    const FString WeatherNames[] = { TEXT("Clear Skies"), TEXT("Morning Fog"), TEXT("Overcast") };
+    DrawText(TEXT("WEATHER  [Z / X]"), FLinearColor(0.6f, 0.6f, 0.7f), CenterX + 50.0f, Y - 180.0f, GEngine->GetSmallFont());
+    
+    FString WeatherLabel = FString::Printf(TEXT("◄  %s  ►"), *WeatherNames[MenuWeatherSelection]);
+    DrawText(WeatherLabel, FLinearColor(0.2f, 0.8f, 1.0f), CenterX + 70.0f, Y - 155.0f, GEngine->GetSmallFont());
+
+    // Time
+    const FString TimeNames[] = { TEXT("Day"), TEXT("Night") };
+    DrawText(TEXT("TIME OF DAY  [C / V]"), FLinearColor(0.6f, 0.6f, 0.7f), CenterX + 50.0f, Y - 100.0f, GEngine->GetSmallFont());
+    
+    FString TimeLabel = FString::Printf(TEXT("◄  %s  ►"), *TimeNames[MenuTimeSelection]);
+    DrawText(TimeLabel, FLinearColor(0.8f, 0.4f, 1.0f), CenterX + 70.0f, Y - 75.0f, GEngine->GetSmallFont());
     
     // Confirm
     DrawText(TEXT("═══════════════════════════════════════════"), FLinearColor(0.3f, 0.3f, 0.4f), CenterX - 280.0f, Y, GEngine->GetSmallFont());

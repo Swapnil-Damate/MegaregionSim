@@ -88,7 +88,43 @@ void AMasterSimulationController::GenerateEnvironment()
 	}
 }
 
+#include "MegaregionGameMode.h"
+#include "Engine/DirectionalLight.h"
+#include "Kismet/GameplayStatics.h"
+
 void AMasterSimulationController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (!bWeatherApplied)
+	{
+		AMegaregionGameMode* GameMode = Cast<AMegaregionGameMode>(GetWorld()->GetAuthGameMode());
+		if (GameMode && GameMode->bStartMenuComplete)
+		{
+			// Apply Weather
+			if (GameMode->SelectedWeather == 1 || GameMode->SelectedWeather == 2) // Foggy or Overcast
+			{
+				FActorSpawnParameters SpawnParams;
+				AExponentialHeightFog* Fog = GetWorld()->SpawnActor<AExponentialHeightFog>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+				if (Fog && Fog->GetComponent())
+				{
+					Fog->GetComponent()->SetFogDensity(GameMode->SelectedWeather == 1 ? 0.05f : 0.15f);
+					Fog->GetComponent()->SetFogFalloff(0.2f);
+				}
+			}
+
+			// Apply Time Of Day
+			if (GameMode->SelectedTimeOfDay == 1) // Night
+			{
+				TArray<AActor*> Lights;
+				UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADirectionalLight::StaticClass(), Lights);
+				for (AActor* Light : Lights)
+				{
+					Light->SetActorRotation(FRotator(-90.0f, 0, 0)); // Point straight down for dark night
+				}
+			}
+
+			bWeatherApplied = true;
+		}
+	}
 }

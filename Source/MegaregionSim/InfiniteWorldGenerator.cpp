@@ -20,35 +20,16 @@ AInfiniteWorldGenerator::AInfiniteWorldGenerator()
 	MainTrackSpline->AddSplinePoint(FVector(1000,0,0), ESplineCoordinateSpace::World); // Initial direction
 }
 
+static float GetProceduralTerrainZ(float X, float Y) {
+    float NoiseScale = 0.00002f;
+    float Mountains = FMath::PerlinNoise2D(FVector2D(X * NoiseScale, Y * NoiseScale)) * 10000.0f;
+    float Details = FMath::PerlinNoise2D(FVector2D(X * NoiseScale * 5.0f, Y * NoiseScale * 5.0f)) * 3000.0f;
+    return Mountains + Details;
+}
+
 static float GetGroundHeightForGenerator(UWorld* World, float X, float Y, float DefaultZ)
 {
-	if (!World) return DefaultZ;
-
-	FVector TraceStart(X, Y, 50000.0f);
-	FVector TraceEnd(X, Y, -20000.0f);
-
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.bTraceComplex = false;
-
-	if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic, Params))
-	{
-		AActor* HitActor = HitResult.GetActor();
-		if (HitActor && (HitActor->GetName().Contains(TEXT("Track")) || HitActor->GetName().Contains(TEXT("Train")) || HitActor->GetName().Contains(TEXT("Car"))))
-		{
-			FCollisionQueryParams RefinedParams;
-			RefinedParams.AddIgnoredActor(HitActor);
-			if (World->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic, RefinedParams))
-			{
-				return HitResult.Location.Z;
-			}
-		}
-		else
-		{
-			return HitResult.Location.Z;
-		}
-	}
-	return DefaultZ;
+	return GetProceduralTerrainZ(X, Y);
 }
 
 void AInfiniteWorldGenerator::BeginPlay()
