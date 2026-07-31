@@ -27,6 +27,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Economy")
 	FString GetActiveContractDetails();
 
+	UFUNCTION(BlueprintCallable, Category = "Economy")
+	void CompleteContract();
+
 	UFUNCTION(BlueprintCallable, Category = "Maintenance")
 	void WashTrain(float& TrainDirtiness, int32 Cost);
 
@@ -40,6 +43,12 @@ private:
 	FSQLiteDatabase EconomyDB;
 	
 	FString ActiveContract;
+	FString ActiveCargo;
+
+	FTimerHandle ContractTimerHandle;
+	void OnContractExpired();
+
+	int32 CoalDeliveryCount = 0;
 
 	void InitializeDatabase();
 };

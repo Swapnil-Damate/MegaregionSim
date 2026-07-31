@@ -4,6 +4,8 @@
 #include "AITrainController.h"
 #include "MegaregionGameMode.h"
 #include "TimerManager.h"
+#include "OpenWorldGraphGenerator.h"
+#include "Kismet/GameplayStatics.h"
 
 void UAutomatedTrainSpawner::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -25,26 +27,37 @@ void UAutomatedTrainSpawner::CheckStartMenuComplete()
 
 void UAutomatedTrainSpawner::SpawnRealAITrains()
 {
-	// Spawn physical trains on the parallel track
-	for (int32 i = 1; i <= 5; ++i)
+	AOpenWorldGraphGenerator* GraphGen = Cast<AOpenWorldGraphGenerator>(UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass()));
+	if (!GraphGen || GraphGen->CityGraph.Num() == 0) return;
+
+	for (const FCityNode& City : GraphGen->CityGraph)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		FVector SpawnLocation((i + 1) * 30000.0f, 0, 100.0f); // Spaced out every 30km
-		FRotator SpawnRotation(0, 180.0f, 0); // Face opposite direction
+		FVector SpawnLocation = City.Location + FVector(0, 0, 100.0f); 
+		FRotator SpawnRotation(0, 180.0f, 0);
 
 		ATrainPawn* NewTrain = GetWorld()->SpawnActor<ATrainPawn>(SpawnLocation, SpawnRotation, SpawnParams);
 		if (NewTrain)
 		{
-			NewTrain->bOnParallelTrack = true; // Use parallel track
-			NewTrain->SpawnConsist(); // Let it spawn its cars
+			NewTrain->bOnParallelTrack = true;
+			NewTrain->SpawnConsist();
 
-			// Give it an AI brain
 			AAITrainController* Controller = GetWorld()->SpawnActor<AAITrainController>(SpawnLocation, SpawnRotation, SpawnParams);
 			if (Controller)
 			{
 				Controller->Possess(NewTrain);
+				if (GraphGen->CityGraph.Num() > 1)
+				{
+					int32 TargetIdx = FMath::RandRange(0, GraphGen->CityGraph.Num() - 1);
+					Controller->DestinationCity = GraphGen->CityGraph[TargetIdx].CityName;
+				}
+				else
+				{
+					Controller->DestinationCity = TEXT("Terminus");
+				}
+				Controller->ScheduleTime = FDateTime::Now() + FTimespan::FromHours(1);
 			}
 		}
 	}

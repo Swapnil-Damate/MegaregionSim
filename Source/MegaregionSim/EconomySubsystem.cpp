@@ -1,6 +1,8 @@
 #include "EconomySubsystem.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
+#include "Engine/World.h"
+#include "TimerManager.h"
 
 void UEconomySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -81,13 +83,25 @@ void UEconomySubsystem::GenerateRandomContract()
 	int32 Reward = FMath::RandRange(5000, 25000);
 	int32 Liters = FMath::RandRange(10000, 50000);
 	
-	TArray<FString> Cargos = {TEXT("Crude Oil"), TEXT("Liquid Hydrogen"), TEXT("Diesel Fuel"), TEXT("Ethanol")};
+	TArray<FString> Cargos = {TEXT("Crude Oil"), TEXT("Liquid Hydrogen"), TEXT("Diesel Fuel"), TEXT("Ethanol"), TEXT("Coal")};
 	FString SelectedCargo = Cargos[FMath::RandRange(0, Cargos.Num() - 1)];
+
+	if (SelectedCargo == TEXT("Coal"))
+	{
+		float Multiplier = FMath::Max(0.1f, 1.0f - (CoalDeliveryCount * 0.1f));
+		Reward = FMath::RoundToInt(Reward * Multiplier);
+	}
+	ActiveCargo = SelectedCargo;
 
 	TArray<FString> Cities = {TEXT("New Chicago"), TEXT("San Angeles"), TEXT("MegaCity One"), TEXT("Detroit Prime")};
 	FString Destination = Cities[FMath::RandRange(0, Cities.Num() - 1)];
 
-	ActiveContract = FString::Printf(TEXT("Deliver %dL of %s to %s | Reward: $%d"), Liters, *SelectedCargo, *Destination, Reward);
+	ActiveContract = FString::Printf(TEXT("Deliver %dL of %s to %s | Reward: $%d | Time Limit: 10 mins"), Liters, *SelectedCargo, *Destination, Reward);
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(ContractTimerHandle, this, &UEconomySubsystem::OnContractExpired, 600.0f, false);
+	}
 }
 
 FString UEconomySubsystem::GetActiveContractDetails()
@@ -106,5 +120,31 @@ void UEconomySubsystem::WashTrain(float& TrainDirtiness, int32 Cost)
 	{
 		AddFunds(-Cost);
 		TrainDirtiness = 0.0f;
+	}
+}
+
+void UEconomySubsystem::CompleteContract()
+{
+	if (!ActiveContract.IsEmpty())
+	{
+		if (ActiveCargo == TEXT("Coal"))
+		{
+			CoalDeliveryCount++;
+		}
+		
+		if (GetWorld())
+		{
+			GetWorld()->GetTimerManager().ClearTimer(ContractTimerHandle);
+		}
+		ActiveContract = TEXT("");
+	}
+}
+
+void UEconomySubsystem::OnContractExpired()
+{
+	if (!ActiveContract.IsEmpty())
+	{
+		AddFunds(-5000); // Penalty
+		ActiveContract = TEXT("");
 	}
 }

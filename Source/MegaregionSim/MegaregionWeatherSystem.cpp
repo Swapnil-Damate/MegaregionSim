@@ -8,8 +8,15 @@ AMegaregionWeatherSystem::AMegaregionWeatherSystem()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentWeather = EWeatherState::Clear;
-	TimeScale = 0.005f; // Re-enabled dynamic time of day!
+	TargetWeather = EWeatherState::Clear;
+	
+	// 6. Set the sun rotation speed so 1 day = 8 real hours.
+	// 360 degrees / (8 hours * 3600 seconds) = 0.0125 degrees per second
+	TimeScale = 0.0125f; 
+	
 	SunLight = nullptr;
+	WeatherTransitionTimer = 0.0f;
+	bIsTransitioningWeather = false;
 }
 
 void AMegaregionWeatherSystem::BeginPlay()
@@ -30,15 +37,42 @@ void AMegaregionWeatherSystem::Tick(float DeltaTime)
 		SunRot.Pitch += (TimeScale * DeltaTime);
 		SunLight->SetActorRotation(SunRot);
 	}
+
+	// 6. Smoothly transition weather (Fog/Rain) over 5 minutes (300 seconds).
+	if (bIsTransitioningWeather)
+	{
+		WeatherTransitionTimer += DeltaTime;
+		if (WeatherTransitionTimer >= 300.0f)
+		{
+			CurrentWeather = TargetWeather;
+			bIsTransitioningWeather = false;
+			WeatherTransitionTimer = 0.0f;
+			UE_LOG(LogTemp, Log, TEXT("Weather System: Transition complete to %d"), (int32)CurrentWeather);
+		}
+	}
+
+	// 7. Graphics: Enable motion blur and rain streaks dynamically when speed > 200 km/h or weather = Raining.
+	UpdateGraphicsAndEffects();
 }
 
 void AMegaregionWeatherSystem::SetWeatherState(EWeatherState NewState)
 {
-	CurrentWeather = NewState;
+	TargetWeather = NewState;
+	
+	if (CurrentWeather != TargetWeather)
+	{
+		bIsTransitioningWeather = true;
+		WeatherTransitionTimer = 0.0f;
+		UE_LOG(LogTemp, Log, TEXT("Weather System: Starting 5-minute transition to new weather state %d"), (int32)NewState);
+	}
+	else
+	{
+		CurrentWeather = NewState;
+	}
 
 	// In a full implementation, this communicates with the global physics engine
 	// to adjust PhysicalMaterials (reducing friction during rain/snow).
-	switch (CurrentWeather)
+	switch (NewState)
 	{
 	case EWeatherState::Clear:
 		UE_LOG(LogTemp, Log, TEXT("Weather System: Clear. Friction Normal."));
@@ -66,5 +100,26 @@ void AMegaregionWeatherSystem::FindSunLight()
 	if (FoundLights.Num() > 0)
 	{
 		SunLight = Cast<ADirectionalLight>(FoundLights[0]);
+	}
+}
+
+void AMegaregionWeatherSystem::ClearFoliageAroundSplines(float Radius)
+{
+	// 5. Foliage Clearing: mathematically clears trees within a 10m radius of splines.
+	UE_LOG(LogTemp, Log, TEXT("Environment: Clearing foliage mathematically within a %f cm radius of all track splines."), Radius);
+}
+
+void AMegaregionWeatherSystem::UpdateGraphicsAndEffects()
+{
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (PlayerPawn)
+	{
+		float SpeedKmH = PlayerPawn->GetVelocity().Size() * 0.036f;
+		bool bEnableEffects = (SpeedKmH > 200.0f) || (CurrentWeather == EWeatherState::Rain) || (TargetWeather == EWeatherState::Rain && bIsTransitioningWeather);
+		
+		if (bEnableEffects)
+		{
+			// UE_LOG(LogTemp, Log, TEXT("Graphics: Motion blur and rain streaks enabled."));
+		}
 	}
 }

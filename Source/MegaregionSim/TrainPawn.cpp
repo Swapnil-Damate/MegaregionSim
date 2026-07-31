@@ -4,6 +4,7 @@
 #include "TrainPawn.h"
 #include "MegaregionGameMode.h"
 #include "TrainCar.h"
+#include "MegaregionWeatherSystem.h"
 #include "TrainSimHUD.h"
 #include "Math/UnrealMathUtility.h"
 #include "Camera/CameraComponent.h"
@@ -31,6 +32,7 @@
 #include "Sound/SoundBase.h"
 #include "Components/SplineComponent.h"
 #include "MegaregionZoningGenerator.h"
+#include "OpenWorldGraphGenerator.h"
 
 ATrainPawn::ATrainPawn()
 {
@@ -125,6 +127,8 @@ ATrainPawn::ATrainPawn()
 	BrakeExhaustRate        = 5.0f;
 	BrakeChargeRate         = 3.0f;
 	MaxBrakeForce           = 8000000.0f;
+	DynamicBrakeEffort      = 0.0f;
+	ContinuousBrakeTime     = 0.0f;
 
 	CurrentThrottleNotch = 0.0f;
 	CurrentThrust        = 0.0f;
@@ -151,13 +155,13 @@ void ATrainPawn::BeginPlay()
 	}
 
 	// Find the World Generator and cache its spline
-	AActor* GeneratorActor = UGameplayStatics::GetActorOfClass(GetWorld(), AInfiniteWorldGenerator::StaticClass());
+	AActor* GeneratorActor = UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass());
 	if (GeneratorActor)
 	{
-		AInfiniteWorldGenerator* Generator = Cast<AInfiniteWorldGenerator>(GeneratorActor);
-		if (Generator && Generator->MainTrackSpline)
+		AOpenWorldGraphGenerator* Generator = Cast<AOpenWorldGraphGenerator>(GeneratorActor);
+		if (Generator && Generator->ExpressTrackForward)
 		{
-			MainTrackSplineRef = Generator->MainTrackSpline;
+			MainTrackSplineRef = Generator->ExpressTrackForward;
 		}
 	}
 
@@ -360,6 +364,22 @@ void ATrainPawn::Tick(float DeltaTime)
 
 	// Brakes reduce target speed
 	float BrakeRatio = BrakeCylinderPressure / 64.0f;
+
+	// Overhaul Air Brakes: simulate brake overheating if brakes held continuously > 60 seconds
+	if (BrakeRatio > 0.01f)
+	{
+		ContinuousBrakeTime += DeltaTime;
+		if (ContinuousBrakeTime > 60.0f)
+		{
+			BrakeRatio = 0.0f;
+			UE_LOG(LogTemp, Warning, TEXT("Brakes Overheated! Braking effort failed."));
+		}
+	}
+	else
+	{
+		ContinuousBrakeTime = 0.0f;
+	}
+
 	if (BrakeRatio > 0.01f)
 	{
 		float MaxBrakeDecelMs = 5.0f; // 5 m/s² max deceleration
@@ -368,11 +388,81 @@ void ATrainPawn::Tick(float DeltaTime)
 
 	// Smooth acceleration — 0→100 km/h in ~10 seconds
 	float AccelRate = (TargetSpeedMs > CurrentSpeedMs) ? 3.0f : 6.0f; // faster braking
+	
+	// Cargo Weight Physics: Heavily dampen acceleration if pulling > 10 cars
+	if (ConsistCars.Num() > 10 && TargetSpeedMs > CurrentSpeedMs)
+	{
+		AccelRate *= 0.1f;
+	}
+	
 	CurrentSpeedMs  = FMath::FInterpConstantTo(CurrentSpeedMs, TargetSpeedMs, DeltaTime, AccelRate);
+
+	// Wind Resistance: Math cap where aerodynamic drag forcefully clamps max speed at 250 km/h
+	const float MaxAbsoluteSpeedMs = 250.0f / 3.6f;
+	if (CurrentSpeedMs > MaxAbsoluteSpeedMs)
+	{
+		CurrentSpeedMs = MaxAbsoluteSpeedMs;
+	}
+
+	// Wheel Slip: True if throttle is maxed while raining
+	bIsWheelSlipping = false;
+	if (CurrentThrottleNotch >= 8.0f)
+	{
+		AMegaregionWeatherSystem* WeatherSys = Cast<AMegaregionWeatherSystem>(UGameplayStatics::GetActorOfClass(GetWorld(), AMegaregionWeatherSystem::StaticClass()));
+		if (WeatherSys && WeatherSys->CurrentWeather == EWeatherState::Rain)
+		{
+			bIsWheelSlipping = true;
+		}
+	}
+
+	// Coupler Slack: Clank debug logs when starting from 0
+	if (bWasStopped && CurrentSpeedMs > 0.1f)
+	{
+		CouplerSlackClanksRemaining = 12;
+		CouplerSlackTimer = 0.5f;
+	}
+	bWasStopped = (CurrentSpeedMs <= 0.1f);
+	
+	if (CouplerSlackClanksRemaining > 0)
+	{
+		CouplerSlackTimer -= DeltaTime;
+		if (CouplerSlackTimer <= 0.0f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CLANK! (Coupler Slack)"));
+			CouplerSlackClanksRemaining--;
+			CouplerSlackTimer = 0.5f;
+		}
+	}
 
 	// ── Move loco and consist kinematically ─────────────────────────────────────
 	if (MainTrackSplineRef)
 	{
+		// Auto-Routing: Switch automatically at junctions
+		if (bAutoRouteEnabled)
+		{
+			AMegaregionGameMode* GM = Cast<AMegaregionGameMode>(GetWorld()->GetAuthGameMode());
+			if (GM)
+			{
+				float FrameDist = CurrentSpeedMs * 100.0f * DeltaTime;
+				for (float TurnoutDist : GM->TurnoutDistances)
+				{
+					float DistToTurnout = TurnoutDist - CurrentDistanceAlongSpline;
+					if (DistToTurnout <= 0.0f && DistToTurnout > -FrameDist)
+					{
+						AOpenWorldGraphGenerator* Generator = Cast<AOpenWorldGraphGenerator>(UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass()));
+						if (Generator)
+						{
+							if (MainTrackSplineRef == Generator->ExpressTrackForward) MainTrackSplineRef = Generator->FreightTrackForward;
+							else if (MainTrackSplineRef == Generator->FreightTrackForward) MainTrackSplineRef = Generator->ExpressTrackReverse;
+							else if (MainTrackSplineRef == Generator->ExpressTrackReverse) MainTrackSplineRef = Generator->FreightTrackReverse;
+							else if (MainTrackSplineRef == Generator->FreightTrackReverse) MainTrackSplineRef = Generator->ExpressTrackForward;
+							UE_LOG(LogTemp, Warning, TEXT("Auto-Route: Switched automatically at junction."));
+						}
+					}
+				}
+			}
+		}
+
 		CurrentDistanceAlongSpline += CurrentSpeedMs * 100.0f * DeltaTime;
 
 		FVector NewLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
@@ -564,6 +654,13 @@ void ATrainPawn::SwitchTrack()
 {
     if (GetLocalRole() < ROLE_Authority) { Server_SwitchTrack(); return; }
     
+    // Auto-Routing: mathematically lock J key
+    if (bAutoRouteEnabled)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Manual switch locked (Auto-Routing enabled)."));
+        return;
+    }
+
     if (!MainTrackSplineRef) return;
     
     // Find nearest turnout ahead
@@ -583,8 +680,16 @@ void ATrainPawn::SwitchTrack()
     
     if (bFoundTurnout)
     {
-        bOnParallelTrack = !bOnParallelTrack;
-        UE_LOG(LogTemp, Warning, TEXT("Track switch! Now on %s track."), bOnParallelTrack ? TEXT("PARALLEL") : TEXT("MAIN"));
+        // Physically transition to next spline
+        AOpenWorldGraphGenerator* Generator = Cast<AOpenWorldGraphGenerator>(UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass()));
+        if (Generator)
+        {
+             if (MainTrackSplineRef == Generator->ExpressTrackForward) MainTrackSplineRef = Generator->FreightTrackForward;
+             else if (MainTrackSplineRef == Generator->FreightTrackForward) MainTrackSplineRef = Generator->ExpressTrackReverse;
+             else if (MainTrackSplineRef == Generator->ExpressTrackReverse) MainTrackSplineRef = Generator->FreightTrackReverse;
+             else if (MainTrackSplineRef == Generator->FreightTrackReverse) MainTrackSplineRef = Generator->ExpressTrackForward;
+        }
+        UE_LOG(LogTemp, Warning, TEXT("Track switch! Physically transitioned to next spline."));
     }
     else
     {

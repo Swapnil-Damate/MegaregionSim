@@ -7,7 +7,8 @@
 #include "WorldChunk.generated.h"
 
 class USplineComponent;
-class AInfiniteWorldGenerator;
+class AOpenWorldGraphGenerator;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class MEGAREGIONSIM_API AWorldChunk : public AActor
@@ -17,7 +18,8 @@ class MEGAREGIONSIM_API AWorldChunk : public AActor
 public:	
 	AWorldChunk();
 
-	void InitializeChunk(AInfiniteWorldGenerator* Generator, USplineComponent* InSpline, float StartDistance, float EndDistance);
+	UFUNCTION(BlueprintCallable, Category="World Chunk")
+	void InitializeChunk(AOpenWorldGraphGenerator* Generator, USplineComponent* InSpline, float StartDistance, float EndDistance);
 
 protected:
 	UPROPERTY()

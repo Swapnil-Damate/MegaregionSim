@@ -2,6 +2,7 @@
 #include "TrainPawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "MegaregionZoningGenerator.h"
+#include "LevelCrossing.h"
 
 AAITrainController::AAITrainController()
 {
@@ -16,6 +17,7 @@ void AAITrainController::BeginPlay()
 
 	// Cache all signals once at startup rather than scanning every tick
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ARailwaySignal::StaticClass(), CachedSignals);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ALevelCrossing::StaticClass(), CachedCrossings);
 	
 	// Refresh cache every 10 seconds in case new signals are dynamically spawned by chunks
 	GetWorldTimerManager().SetTimer(SignalCacheTimer, this, &AAITrainController::RefreshSignalCache, 10.0f, true);
@@ -39,6 +41,16 @@ void AAITrainController::Tick(float DeltaTime)
 void AAITrainController::RefreshSignalCache()
 {
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ARailwaySignal::StaticClass(), CachedSignals);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ALevelCrossing::StaticClass(), CachedCrossings);
+}
+
+void AAITrainController::CleanupCrash()
+{
+	if (ControlledTrain)
+	{
+		ControlledTrain->Destroy();
+	}
+	Destroy();
 }
 
 void AAITrainController::ScanForSignals()
@@ -61,32 +73,96 @@ void AAITrainController::ScanForSignals()
 		TargetSpeedKmh = 80.0f;
 	}
 
-	ARailwaySignal* NextSignal = GetNextSignalAhead();
-	
-	if (NextSignal)
+	// Mock 5km block signal check
+	bool bBlockOccupied = false;
+	TArray<AActor*> OtherTrains;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATrainPawn::StaticClass(), OtherTrains);
+	FVector TrainLoc = ControlledTrain->GetActorLocation();
+	FVector TrainForward = ControlledTrain->GetActorForwardVector();
+	for (AActor* Actor : OtherTrains)
 	{
-		float DistanceToSignal = FVector::Distance(ControlledTrain->GetActorLocation(), NextSignal->GetActorLocation());
-		
-		if (NextSignal->CurrentState == ESignalState::Stop && DistanceToSignal < SafeFollowingDistance)
+		if (Actor != ControlledTrain)
 		{
-			// Red Signal Ahead! Apply Brakes!
-			ControlledTrain->SetThrottleNotch(0.0f);
-			ControlledTrain->SetTargetBrakePressure(60.0f); // Apply heavy brakes (drop pipe from 90 to 60)
-			return;
+			FVector DirToOther = (Actor->GetActorLocation() - TrainLoc).GetSafeNormal();
+			float Dot = FVector::DotProduct(TrainForward, DirToOther);
+			if (Dot > 0.5f) 
+			{
+				float Dist = FVector::Distance(TrainLoc, Actor->GetActorLocation());
+				if (Dist < 500000.0f) // 5km
+				{
+					bBlockOccupied = true;
+					break;
+				}
+			}
 		}
 	}
 
-	// Track is Clear! Maintain speed.
-	float CurrentSpeedKmh = ControlledTrain->GetVelocity().Size() * 0.036f;
+	ARailwaySignal* NextSignal = GetNextSignalAhead();
 	
-	if (CurrentSpeedKmh < TargetSpeedKmh)
+	if (bBlockOccupied || (NextSignal && NextSignal->CurrentState == ESignalState::Stop && FVector::Distance(TrainLoc, NextSignal->GetActorLocation()) < SafeFollowingDistance))
 	{
-		ControlledTrain->SetTargetBrakePressure(90.0f); // Release brakes fully
-		ControlledTrain->SetThrottleNotch(8.0f); // Full power
+		// Red Signal Ahead! Apply Brakes!
+		ControlledTrain->SetThrottleNotch(0.0f);
+		ControlledTrain->SetTargetBrakePressure(60.0f); // Apply heavy brakes (drop pipe from 90 to 60)
 	}
 	else
 	{
-		ControlledTrain->SetThrottleNotch(0.0f); // Coast to maintain speed
+		// Track is Clear! Maintain speed.
+		float CurrentSpeedKmh = ControlledTrain->GetVelocity().Size() * 0.036f;
+		
+		if (CurrentSpeedKmh < TargetSpeedKmh)
+		{
+			ControlledTrain->SetTargetBrakePressure(90.0f); // Release brakes fully
+			ControlledTrain->SetThrottleNotch(8.0f); // Full power
+		}
+		else
+		{
+			ControlledTrain->SetThrottleNotch(0.0f); // Coast to maintain speed
+		}
+	}
+
+	float CurrentSpeedKmh = ControlledTrain->GetVelocity().Size() * 0.036f;
+	if (CurrentSpeedKmh > TargetSpeedKmh * 1.5f) // Derail condition
+	{
+		if (!bIsDerailed)
+		{
+			bIsDerailed = true;
+			GetWorldTimerManager().SetTimer(CleanupTimer, this, &AAITrainController::CleanupCrash, 600.0f, false);
+		}
+	}
+
+	for (AActor* Actor : CachedCrossings)
+	{
+		ALevelCrossing* Crossing = Cast<ALevelCrossing>(Actor);
+		if (Crossing && Crossing->GateMesh)
+		{
+			float DistToCrossing = FVector::Distance(TrainLoc, Crossing->GetActorLocation());
+			if (DistToCrossing < 100000.0f) // 1 km
+			{
+				TArray<FOverlapResult> Overlaps;
+				FCollisionShape Box = FCollisionShape::MakeBox(FVector(1000.0f, 1000.0f, 500.0f));
+				FCollisionQueryParams QueryParams;
+				QueryParams.AddIgnoredActor(Crossing);
+				GetWorld()->OverlapMultiByChannel(Overlaps, Crossing->GetActorLocation(), FQuat::Identity, ECC_Pawn, Box, QueryParams);
+				bool bCarsPresent = false;
+				for (const FOverlapResult& Overlap : Overlaps)
+				{
+					AActor* OverlapActor = Overlap.GetActor();
+					if (OverlapActor && !OverlapActor->IsA(ATrainPawn::StaticClass()))
+					{
+						bCarsPresent = true;
+						break;
+					}
+				}
+
+				if (bCarsPresent)
+				{
+					FRotator CurrentRot = Crossing->GateMesh->GetRelativeRotation();
+					FRotator TargetRot(0, 0, -90.0f);
+					Crossing->GateMesh->SetRelativeRotation(FMath::RInterpConstantTo(CurrentRot, TargetRot, GetWorld()->GetDeltaSeconds(), 90.0f / 5.0f));
+				}
+			}
+		}
 	}
 }
 

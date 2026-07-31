@@ -42,10 +42,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Weather")
 	void SetWeatherState(EWeatherState NewState);
 
+	UFUNCTION(BlueprintCallable, Category = "Environment")
+	void ClearFoliageAroundSplines(float Radius = 1000.0f);
+
+	UFUNCTION(BlueprintCallable, Category = "Graphics")
+	void UpdateGraphicsAndEffects();
+
 private:
 	// Find the Directional Light in the scene to rotate it
 	class ADirectionalLight* SunLight;
 	
 	// Helper to find the sun
 	void FindSunLight();
+
+	// Smooth weather transition
+	EWeatherState TargetWeather;
+	float WeatherTransitionTimer;
+	bool bIsTransitioningWeather;
 };

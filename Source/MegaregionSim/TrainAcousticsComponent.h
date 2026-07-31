@@ -19,6 +19,9 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Acoustics")
+	bool bInTunnel;
+
 	// In the final game this maps to a MetaSound, but here we drive proxy pitch logic
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Acoustics")
 	float BaseEnginePitch;
@@ -30,4 +33,10 @@ public:
 	// Called by physics when the wheel passes a track joint
 	UFUNCTION(BlueprintCallable, Category = "Acoustics")
 	void TriggerTrackClack();
+
+	UFUNCTION(BlueprintCallable, Category = "Acoustics")
+	float CalculateDopplerPitch(float RelativeVelocity);
+
+private:
+	float DistanceSinceLastClack;
 };

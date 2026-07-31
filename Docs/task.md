@@ -14,3 +14,12 @@
   - `[ ]` Mathematically scale `VisualMesh` to squash if impact > threshold
 - `[ ]` Task 4: Update `VisualTest.py` to trigger these scenarios
 - `[ ]` Commit all changes to GitHub
+
+# Phase 5 Completion Tasks
+
+- `[x]` Task 1: Update HUD to show Digital/Analog Speed
+- `[x]` Task 2: Speed Warnings (Flashing yellow/red)
+- `[x]` Task 3: Branch Line Ending Warning
+- `[x]` Task 4: Contract Countdown Timer
+- `[x]` Task 5: GPS Minimap Skeleton
+- `[x]` Task 6: Cinematic Director Camera UI hint

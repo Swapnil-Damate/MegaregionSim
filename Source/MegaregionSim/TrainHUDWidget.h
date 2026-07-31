@@ -41,7 +41,7 @@ public:
 	virtual void NativeConstruct() override;
 
 	// High-performance Native UI Update
-	void UpdateHUDMetrics(float SpeedKmh, float BrakePipePressure, float BrakeCylinderPressure, float ThrottleNotch, int32 EconomyBalance, const FString& ContractName, float CargoIntegrity = 100.0f, const FString& UpcomingTrackEvent = TEXT("Clear"), bool bHeadlightsOn = false, const FString& NextSignal = TEXT("GREEN"));
+	void UpdateHUDMetrics(float SpeedKmh, float BrakePipePressure, float BrakeCylinderPressure, float ThrottleNotch, int32 EconomyBalance, const FString& ContractName, float CargoIntegrity = 100.0f, const FString& UpcomingTrackEvent = TEXT("Clear"), bool bHeadlightsOn = false, const FString& NextSignal = TEXT("GREEN"), float SpeedLimit = 100.0f, bool bDeadEnd = false, float TimeRemaining = 600.0f);
 
 	void SetTrainPawn(class ATrainPawn* Train);
 

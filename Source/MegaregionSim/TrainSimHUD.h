@@ -18,7 +18,28 @@ public:
 
 	// Called by TrainPawn every tick to push latest data
 	void UpdateData(float SpeedKmh, float ThrottleNotch, float BrakePipePSI,
-		float BrakeCylPSI, int32 Balance, const FString& SignalState, bool bHeadlightsOn);
+		float BrakeCylPSI, int32 Balance, const FString& SignalState, bool bHeadlightsOn,
+		float InSpeedLimit = 100.0f, bool bInDeadEnd = false, float InTimeRemaining = 600.0f);
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
+
+private:
+	// Slate Widgets
+	TSharedPtr<class SOverlay> MainHUDOverlay;
+	TSharedPtr<class STextBlock> SlateSpeedText;
+	TSharedPtr<class STextBlock> SpeedWarningText;
+	TSharedPtr<class STextBlock> DeadEndWarningText;
+	TSharedPtr<class STextBlock> ContractTimeText;
+	TSharedPtr<class STextBlock> CinematicHintText;
+
+	// Mock Variables
+	float SpeedLimit = 100.0f;
+	bool bIsApproachingDeadEnd = false;
+	float ContractTimeRemaining = 600.0f;
+
 
 private:
 	// Start menu state

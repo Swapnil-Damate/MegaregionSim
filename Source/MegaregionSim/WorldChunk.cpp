@@ -95,17 +95,18 @@ AWorldChunk::AWorldChunk()
 	if (RuralStationAsset.Succeeded()) RuralStationISM->SetStaticMesh(RuralStationAsset.Object);
 }
 
-void AWorldChunk::InitializeChunk(AInfiniteWorldGenerator* Generator, USplineComponent* InSpline, float StartDistance, float EndDistance)
+void AWorldChunk::InitializeChunk(AOpenWorldGraphGenerator* Generator, USplineComponent* InSpline, float StartDistance, float EndDistance)
 {
+	if (!Generator || !InSpline) return;
 	GenerateTerrainInstances(InSpline, StartDistance, EndDistance);
 	GenerateTrackSplineMeshes(InSpline, StartDistance, EndDistance);
 }
 
-#include "InfiniteWorldGenerator.h"
+#include "OpenWorldGraphGenerator.h"
 
 static float GetGroundHeightForChunk(UWorld* World, float X, float Y, float DefaultZ)
 {
-	return AInfiniteWorldGenerator::GetProceduralTerrainZ(X, Y);
+	return AOpenWorldGraphGenerator::GetProceduralTerrainZ(X, Y);
 }
 
 void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist)

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "RailwaySignal.h"
+#include "Misc/DateTime.h"
 #include "AITrainController.generated.h"
 
 class ATrainPawn;
@@ -22,6 +23,12 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Schedule")
+	FString DestinationCity;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Schedule")
+	FDateTime ScheduleTime;
+
 private:
 	UPROPERTY()
 	ATrainPawn* ControlledTrain;
@@ -37,4 +44,10 @@ private:
 	TArray<AActor*> CachedSignals;
 	FTimerHandle SignalCacheTimer;
 	void RefreshSignalCache();
+
+	TArray<AActor*> CachedCrossings;
+
+	bool bIsDerailed = false;
+	FTimerHandle CleanupTimer;
+	void CleanupCrash();
 };

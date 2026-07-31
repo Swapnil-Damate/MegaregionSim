@@ -3,13 +3,19 @@
 #include "Engine/Font.h"
 #include "GameFramework/PlayerController.h"
 #include "MegaregionGameMode.h"
+#include "Engine/Engine.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/SWeakWidget.h"
+#include "Styling/CoreStyle.h"
 
 ATrainSimHUD::ATrainSimHUD()
 {
 }
 
 void ATrainSimHUD::UpdateData(float SpeedKmh, float ThrottleNotch, float BrakePipePSI,
-	float BrakeCylPSI, int32 Balance, const FString& SignalState, bool bHeadlightsOn)
+	float BrakeCylPSI, int32 Balance, const FString& SignalState, bool bHeadlightsOn,
+	float InSpeedLimit, bool bInDeadEnd, float InTimeRemaining)
 {
 	CachedSpeed      = SpeedKmh;
 	CachedThrottle   = ThrottleNotch;
@@ -18,7 +24,158 @@ void ATrainSimHUD::UpdateData(float SpeedKmh, float ThrottleNotch, float BrakePi
 	CachedBalance    = Balance;
 	CachedSignal     = SignalState;
 	bCachedHeadlight = bHeadlightsOn;
+	SpeedLimit       = InSpeedLimit;
+	bIsApproachingDeadEnd = bInDeadEnd;
+	ContractTimeRemaining = InTimeRemaining;
 }
+
+void ATrainSimHUD::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GEngine && GEngine->GameViewport)
+	{
+		SAssignNew(MainHUDOverlay, SOverlay)
+
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Top)
+		.Padding(FMargin(0, 50, 0, 0))
+		[
+			SAssignNew(DeadEndWarningText, STextBlock)
+			.Text(FText::FromString(TEXT("DEAD END IN 2 KILOMETERS")))
+			.ColorAndOpacity(FSlateColor(FLinearColor::Red))
+			.Visibility(EVisibility::Hidden)
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 36))
+		]
+
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Top)
+		.Padding(FMargin(0, 100, 0, 0))
+		[
+			SAssignNew(SpeedWarningText, STextBlock)
+			.Text(FText::FromString(TEXT("SPEED WARNING")))
+			.ColorAndOpacity(FSlateColor(FLinearColor::Yellow))
+			.Visibility(EVisibility::Hidden)
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 24))
+		]
+
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Top)
+		.Padding(FMargin(0, 20, 20, 0))
+		[
+			SAssignNew(ContractTimeText, STextBlock)
+			.Text(FText::FromString(TEXT("TIME REMAINING: 10:00")))
+			.ColorAndOpacity(FSlateColor(FLinearColor::White))
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
+		]
+
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Bottom)
+		.Padding(FMargin(20, 0, 0, 20))
+		[
+			SAssignNew(CinematicHintText, STextBlock)
+			.Text(FText::FromString(TEXT("[V] Cinematic Camera")))
+			.ColorAndOpacity(FSlateColor(FLinearColor(0.8f, 0.8f, 0.8f, 1.0f)))
+			.Font(FCoreStyle::GetDefaultFontStyle("Regular", 16))
+		]
+
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		.Padding(FMargin(20, 20, 0, 0))
+		[
+			SAssignNew(SlateSpeedText, STextBlock)
+			.Text(FText::FromString(TEXT("SPEED: 000 KM/H")))
+			.ColorAndOpacity(FSlateColor(FLinearColor::Green))
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 32))
+		];
+
+		GEngine->GameViewport->AddViewportWidgetContent(SNew(SWeakWidget).PossiblyNullContent(MainHUDOverlay.ToSharedRef()));
+	}
+}
+
+void ATrainSimHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (GEngine && GEngine->GameViewport && MainHUDOverlay.IsValid())
+	{
+		GEngine->GameViewport->RemoveViewportWidgetContent(MainHUDOverlay.ToSharedRef());
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void ATrainSimHUD::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (MainHUDOverlay.IsValid() && !bShowStartMenu)
+	{
+		MainHUDOverlay->SetVisibility(EVisibility::Visible);
+		
+		if (ContractTimeRemaining > 0)
+		{
+			ContractTimeRemaining -= DeltaSeconds;
+			int32 Mins = FMath::FloorToInt(ContractTimeRemaining / 60.0f);
+			int32 Secs = FMath::FloorToInt(FMath::Fmod(ContractTimeRemaining, 60.0f));
+			ContractTimeText->SetText(FText::FromString(FString::Printf(TEXT("TIME REMAINING: %02d:%02d"), Mins, Secs)));
+		}
+
+		FLinearColor SpeedColor = FLinearColor::Green;
+		bool bShowWarning = false;
+		FLinearColor WarningColor = FLinearColor::Yellow;
+
+		if (CachedSpeed > SpeedLimit + 15.0f)
+		{
+			SpeedColor = FLinearColor::Red;
+			WarningColor = FLinearColor::Red;
+			bShowWarning = true;
+		}
+		else if (CachedSpeed > SpeedLimit + 5.0f)
+		{
+			SpeedColor = FLinearColor::Yellow;
+			WarningColor = FLinearColor::Yellow;
+			bShowWarning = true;
+		}
+
+		SlateSpeedText->SetText(FText::FromString(FString::Printf(TEXT("SPEED: %03d KM/H"), FMath::RoundToInt(CachedSpeed))));
+		SlateSpeedText->SetColorAndOpacity(FSlateColor(SpeedColor));
+
+		if (bShowWarning)
+		{
+			float Time = GetWorld()->GetTimeSeconds();
+			if (FMath::Fmod(Time, 0.5f) > 0.25f)
+			{
+				SpeedWarningText->SetVisibility(EVisibility::Visible);
+			}
+			else
+			{
+				SpeedWarningText->SetVisibility(EVisibility::Hidden);
+			}
+			SpeedWarningText->SetColorAndOpacity(FSlateColor(WarningColor));
+		}
+		else
+		{
+			SpeedWarningText->SetVisibility(EVisibility::Hidden);
+		}
+
+		if (bIsApproachingDeadEnd)
+		{
+			DeadEndWarningText->SetVisibility(EVisibility::Visible);
+		}
+		else
+		{
+			DeadEndWarningText->SetVisibility(EVisibility::Hidden);
+		}
+	}
+	else if (MainHUDOverlay.IsValid() && bShowStartMenu)
+	{
+		MainHUDOverlay->SetVisibility(EVisibility::Hidden);
+	}
+}
+
 
 void ATrainSimHUD::DrawHUDRow(const FString& Label, const FString& Value,
 	float X, float Y, FLinearColor ValueColor)
@@ -116,6 +273,16 @@ void ATrainSimHUD::DrawHUD()
 	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.45f), PanelX - 10.f, Y - 3.f, PanelW, 24.f);
 	DrawText(TEXT("W/S: Throttle   Space: Brakes   L: Lights   J: Track"),
 		FLinearColor(0.5f, 0.5f, 0.5f, 1.0f), PanelX, Y, nullptr, 1.15f);
+
+	// ── Minimap ───────────────────────────────────────────────────────────────
+	const float MinimapRadius = 60.0f;
+	FVector2D MinimapCenter(Canvas->ClipX - MinimapRadius - 20.0f, Canvas->ClipY - MinimapRadius - 20.0f);
+	for (float my = -MinimapRadius; my <= MinimapRadius; my += 1.0f)
+	{
+		float mx = FMath::Sqrt(MinimapRadius * MinimapRadius - my * my);
+		DrawLine(MinimapCenter.X - mx, MinimapCenter.Y + my, MinimapCenter.X + mx, MinimapCenter.Y + my, FLinearColor(0.0f, 0.0f, 0.0f, 0.5f), 1.0f);
+	}
+	DrawRect(FLinearColor::Green, MinimapCenter.X - 4.0f, MinimapCenter.Y - 4.0f, 8.0f, 8.0f);
 }
 
 void ATrainSimHUD::HandleStartMenuInput()

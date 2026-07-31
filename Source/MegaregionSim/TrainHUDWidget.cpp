@@ -67,7 +67,7 @@ UTextBlock* UTrainHUDWidget::ConstructHUDTextElement(const FString& ElementName,
 	return NewText;
 }
 
-void UTrainHUDWidget::UpdateHUDMetrics(float SpeedKmh, float BrakePipePressure, float BrakeCylinderPressure, float ThrottleNotch, int32 EconomyBalance, const FString& ContractName, float CargoIntegrity, const FString& UpcomingTrackEvent, bool bHeadlightsOn, const FString& NextSignal)
+void UTrainHUDWidget::UpdateHUDMetrics(float SpeedKmh, float BrakePipePressure, float BrakeCylinderPressure, float ThrottleNotch, int32 EconomyBalance, const FString& ContractName, float CargoIntegrity, const FString& UpcomingTrackEvent, bool bHeadlightsOn, const FString& NextSignal, float SpeedLimit, bool bDeadEnd, float TimeRemaining)
 {
 	if (SpeedText)
 	{

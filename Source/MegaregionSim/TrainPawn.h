@@ -93,6 +93,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics|Brakes")
 	float MaxBrakeForce;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics|Brakes")
+	float DynamicBrakeEffort;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics|Brakes")
+	float ContinuousBrakeTime;
+
 	float TimeSinceLastHUDUpdate;
 
 	// ── Throttle & speed state ─────────────────────────────────────────────────
@@ -109,6 +115,16 @@ public:
 	// Current distance along the infinite track spline
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
 	float CurrentDistanceAlongSpline;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics")
+	bool bAutoRouteEnabled = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
+	bool bIsWheelSlipping = false;
+
+	int32 CouplerSlackClanksRemaining = 0;
+	float CouplerSlackTimer = 0.0f;
+	bool bWasStopped = true;
 
 	// Reference to the active track spline component
 	UPROPERTY(BlueprintReadOnly, Category = "Train Physics")
