@@ -112,11 +112,11 @@ static float GetGroundHeightForChunk(UWorld* World, float X, float Y, float Defa
 void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist)
 {
 	const float NoiseScale   = 0.00015f;
-	// Terrain sampling step — every 50m along spline
-	const float SplineStep   = 5000.0f;
-	// How far each side of track to scatter vegetation (500m each side)
-	const float LateralHalf  = 50000.0f;
-	const float LateralStep  = 3000.0f; // Every 30m laterally
+	// Terrain sampling step — increased to 100m to fix freeze
+	const float SplineStep   = 10000.0f;
+	// How far each side of track to scatter vegetation (reduced to 200m)
+	const float LateralHalf  = 20000.0f;
+	const float LateralStep  = 8000.0f; // Every 80m laterally to reduce instance count
 
 	for (float Dist = StartDist; Dist < EndDist; Dist += SplineStep)
 	{

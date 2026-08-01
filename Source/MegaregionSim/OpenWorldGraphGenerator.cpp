@@ -42,10 +42,11 @@ void AOpenWorldGraphGenerator::GenerateNextChunk(FVector PlayerLoc)
 	int32 StartIndex = CityGraph.Num();
 	
 	// 1. Generate Cities using Voronoi noise dynamically ahead of the player
-	for (int32 i = 0; i < 3; i++)
+	for (int32 i = 0; i < 2; i++) // Reduced from 3 to 2 for performance
 	{
 		FCityNode NewCity;
-		FVector Offset = FVector(FMath::RandRange(50000.0f, 250000.0f), FMath::RandRange(-200000.0f, 200000.0f), 0.0f);
+		// Reduced bounds from 250km to 50km to prevent massive Startup Freeze on main thread
+		FVector Offset = FVector(FMath::RandRange(20000.0f, 50000.0f), FMath::RandRange(-30000.0f, 30000.0f), 0.0f);
 		NewCity.Location = PlayerLoc + Offset;
 		NewCity.CityName = GenerateRandomCityName();
 		NewCity.Population = FMath::RandRange(10000, 5000000);

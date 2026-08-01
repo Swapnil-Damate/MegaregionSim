@@ -139,6 +139,11 @@ ATrainPawn::ATrainPawn()
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// MUST be false so the camera can orbit 360 degrees instead of spinning the entire train
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
