@@ -137,7 +137,6 @@ ATrainPawn::ATrainPawn()
 	MainTrackSplineRef   = nullptr;
 	TimeSinceLastHUDUpdate = 0.0f;
 
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// MUST be false so the camera can orbit 360 degrees instead of spinning the entire train
