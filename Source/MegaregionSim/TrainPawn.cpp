@@ -378,6 +378,9 @@ void ATrainPawn::Tick(float DeltaTime)
 	}
 
 	// ── KINEMATIC SPEED MODEL ─────────────────────────────────────────────────
+	// 3-Second Turbo Spool Delay (Phase 2): Smoothly interpolate CurrentThrottleNotch to TargetThrottleNotch
+	CurrentThrottleNotch = FMath::FInterpTo(CurrentThrottleNotch, TargetThrottleNotch, DeltaTime, 0.33f);
+
 	// Target speed is proportional to throttle notch.  Max speed = 250 km/h.
 	const float MaxSpeedMs  = 250.0f / 3.6f; // 69.4 m/s
 	float TargetSpeedMs     = (CurrentThrottleNotch / 8.0f) * MaxSpeedMs;
@@ -409,10 +412,11 @@ void ATrainPawn::Tick(float DeltaTime)
 	// Smooth acceleration — 0→100 km/h in ~10 seconds
 	float AccelRate = (TargetSpeedMs > CurrentSpeedMs) ? 3.0f : 6.0f; // faster braking
 	
-	// Cargo Weight Physics: Heavily dampen acceleration if pulling > 10 cars
-	if (ConsistCars.Num() > 10 && TargetSpeedMs > CurrentSpeedMs)
+	// Cargo Weight Physics (Phase 2): Heavily dampen acceleration based on train length (F=MA)
+	if (TargetSpeedMs > CurrentSpeedMs)
 	{
-		AccelRate *= 0.1f;
+		int32 CargoCars = FMath::Max(1, ConsistCars.Num());
+		AccelRate = AccelRate / (float)CargoCars; 
 	}
 	
 	CurrentSpeedMs  = FMath::FInterpConstantTo(CurrentSpeedMs, TargetSpeedMs, DeltaTime, AccelRate);
@@ -573,7 +577,12 @@ void ATrainPawn::Tick(float DeltaTime)
 	if (EraVFXManager)
 	{
 		float EngineLoad = CurrentThrottleNotch / 8.0f;
-		if (CurrentSpeedMs * 3.6f > 300.0f)
+		
+		// Derailment Threshold Tolerance (Phase 2): Add 20% Buffer to 300kmh limit
+		float SpeedLimitKmh = 300.0f;
+		float BufferLimitKmh = SpeedLimitKmh * 1.2f; // 20% tolerance before derailing
+		
+		if (CurrentSpeedMs * 3.6f > BufferLimitKmh)
 			DerailTrain();
 	}
 
@@ -623,6 +632,7 @@ void ATrainPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 	}
 
 	PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &ATrainPawn::ToggleHeadlight);
+	PlayerInputComponent->BindKey(EKeys::P, IE_Pressed, this, &ATrainPawn::ToggleWipers);
 	PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &ATrainPawn::PlayHorn);
 	PlayerInputComponent->BindKey(EKeys::J, IE_Pressed, this, &ATrainPawn::SwitchTrack);
 	PlayerInputComponent->BindKey(EKeys::V, IE_Pressed, this, &ATrainPawn::ToggleCinematicCamera);
@@ -697,7 +707,7 @@ void ATrainPawn::BrakeInput(const FInputActionValue& Value)
 void ATrainPawn::SetThrottleNotch(float NewNotch)
 {
 	if (GetLocalRole() < ROLE_Authority) Server_SetThrottleNotch(NewNotch);
-	CurrentThrottleNotch = FMath::Clamp(NewNotch, 0.0f, 8.0f);
+	TargetThrottleNotch = FMath::Clamp(NewNotch, 0.0f, 8.0f);
 }
 void ATrainPawn::Server_SetThrottleNotch_Implementation(float NewNotch) { SetThrottleNotch(NewNotch); }
 bool ATrainPawn::Server_SetThrottleNotch_Validate(float NewNotch) { return true; }
@@ -724,6 +734,19 @@ void ATrainPawn::LogPhysicsState()
 void ATrainPawn::ToggleHeadlight()
 {
 	if (Headlight) Headlight->SetVisibility(!Headlight->IsVisible());
+}
+
+void ATrainPawn::ToggleWipers()
+{
+	bWipersActive = !bWipersActive;
+	if (bWipersActive)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Wipers Turned ON. Clearing rain from lens."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Wipers Turned OFF."));
+	}
 }
 
 void ATrainPawn::PlayHorn()

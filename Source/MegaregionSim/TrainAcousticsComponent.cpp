@@ -35,14 +35,15 @@ void UTrainAcousticsComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		float SpeedKmH = VelocityCmS * 0.036f;
 		if (SpeedKmH > 100.0f)
 		{
-			float WindVolumeMultiplier = (SpeedKmH - 100.0f) * 0.02f;
-			// Applying continuous wind volume multiplier
+			float WindVolumeMultiplier = FMath::Clamp((SpeedKmH - 100.0f) * 0.02f, 0.0f, 1.0f);
+			// Apply continuous wind volume multiplier. If we had an AudioComponent, we'd set its volume multiplier here.
 		}
 
-		// 4. Tunnel Reverb: If bInTunnel is true, muffle all sounds (e.g., apply a Low Pass Filter mock).
+		// 4. Tunnel Reverb: If bInTunnel is true, muffle all sounds.
 		if (bInTunnel)
 		{
 			// Applying Low Pass Filter for Tunnel Reverb
+			// e.g. AudioComp->SetLowPassFilterEnabled(true);
 		}
 	}
 }
@@ -50,28 +51,31 @@ void UTrainAcousticsComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 void UTrainAcousticsComponent::UpdateEngineAcoustics(float CurrentRPM, float PhysicsVelocity)
 {
 	// Map RPM to an audio pitch multiplier (e.g. Idle = 1.0, Max RPM = 2.5)
-	float TargetPitch = 1.0f + (CurrentRPM / 1000.0f); // Example formula
+	float TargetPitch = 1.0f + (CurrentRPM / 1000.0f); 
 	
-	// Doppler effect calculation could happen here based on camera distance
-	
-	// In the real system, this pushes the TargetPitch variable to the MetaSound parameter
-	// Proxy implementation: just log it out periodically
-	if (FMath::RandRange(0, 100) > 98)
+	// Doppler effect calculation (Phase 2): Calculate relative velocity to camera
+	if (GetWorld() && GetWorld()->GetFirstPlayerController() && GetWorld()->GetFirstPlayerController()->PlayerCameraManager)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Acoustics Proxy: MetaSound Pitch updated to %f based on RPM %f"), TargetPitch, CurrentRPM);
+		FVector CamLoc = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
+		FVector ToCam = CamLoc - GetOwner()->GetActorLocation();
+		ToCam.Normalize();
+		
+		float RelVel = FVector::DotProduct(GetOwner()->GetVelocity(), ToCam);
+		TargetPitch *= CalculateDopplerPitch(RelVel);
 	}
+	
+	BaseEnginePitch = TargetPitch;
 }
 
 void UTrainAcousticsComponent::TriggerTrackClack()
 {
-	// Called by wheel collision logic exactly when hitting a procedural PCG track joint
-	UE_LOG(LogTemp, Log, TEXT("Acoustics Proxy: Triggering MetaSound [Track_Clack.wav] node."));
+	// In production, this fires a OneShot MetaSound cue for track joint clatter
+	// e.g. UGameplayStatics::PlaySoundAtLocation(this, TrackClackSound, GetOwner()->GetActorLocation());
 }
 
 float UTrainAcousticsComponent::CalculateDopplerPitch(float RelativeVelocity)
 {
-	// 3. Doppler Horns: When AI trains pass, their horn pitch should shift based on relative velocity (Doppler effect math)
-	float SpeedOfSound = 343.0f; // m/s
+	float SpeedOfSound = 34300.0f; // cm/s
 	// Pitch multiplier based on approach/recede
 	float PitchMultiplier = SpeedOfSound / (SpeedOfSound + RelativeVelocity);
 	return FMath::Clamp(PitchMultiplier, 0.1f, 10.0f);

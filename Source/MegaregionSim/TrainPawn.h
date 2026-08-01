@@ -51,6 +51,7 @@ public:
 	USpotLightComponent* Headlight;
 
 	void ToggleHeadlight();
+	void ToggleWipers();
 
 	// ── Enhanced Input ─────────────────────────────────────────────────────────
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -111,6 +112,15 @@ public:
 	/** Current kinematic speed in m/s — drives both movement and HUD */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
 	float CurrentSpeedMs;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
+	float TargetThrottleNotch = 0.0f; // For 3-second turbo spool delay
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
+	float BrakeTemperature = 20.0f; // Ambient temp
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
+	bool bWipersActive = false;
 
 	// Current distance along the infinite track spline
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
