@@ -3,7 +3,7 @@
 
 UCockpitInteractable::UCockpitInteractable()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	// PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UCockpitInteractable::BeginPlay()
