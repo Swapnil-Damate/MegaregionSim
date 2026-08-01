@@ -507,7 +507,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		    NewLoc += RightVec * ParallelTrackOffset;
 		}
 
-		NewLoc.Z += 100.0f; // Track height
+		NewLoc.Z += 20.0f; // Track height (matching consist cars so wheels touch rails)
 
 		// Issue 4: AAA Kinematic Suspension Sway
 		// Simulates 200-ton physics by leaning the train mesh on curves and bobbing on Z

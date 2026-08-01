@@ -306,7 +306,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform BridgeTransform;
 			BridgeTransform.SetLocation(StartLoc);
 			BridgeTransform.SetRotation(StartRot.Quaternion());
-			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack));
+			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 1.0f)); // Only scale X to track segment length!
 			BridgeISM->AddInstance(BridgeTransform);
 		}
 		else if (bIsTunnel)
@@ -314,8 +314,8 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(StartLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			// Issue 6: Increase Tunnel Z-Scale drastically to act as a barricade wall
-			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, ScaleAlongTrack, ScaleAlongTrack * 4.0f));
+			// Only scale X to track segment length. Z scaled by 4 for barricade wall effect.
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 4.0f)); 
 			TunnelISM->AddInstance(TunnelTransform);
 		}
 
@@ -325,7 +325,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform BridgeTransform;
 			BridgeTransform.SetLocation(ParallelLoc);
 			BridgeTransform.SetRotation(StartRot.Quaternion());
-			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack));
+			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 1.0f));
 			BridgeISM->AddInstance(BridgeTransform);
 		}
 		else if (bParallelIsTunnel)
@@ -333,7 +333,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, ScaleAlongTrack, ScaleAlongTrack * 4.0f));
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 4.0f));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
 
