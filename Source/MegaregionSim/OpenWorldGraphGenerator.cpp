@@ -29,6 +29,23 @@ void AOpenWorldGraphGenerator::BeginPlay()
 void AOpenWorldGraphGenerator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	// Issue 18: Infinite World Generation
+	if (GetWorld() && CityGraph.Num() > 0)
+	{
+		APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+		if (PlayerPawn)
+		{
+			FVector PlayerLoc = PlayerPawn->GetActorLocation();
+			FVector LastCityLoc = CityGraph.Last().Location;
+			
+			// If player is within 25km of the last generated city, generate the next chunk
+			if (FVector::Distance(PlayerLoc, LastCityLoc) < 250000.0f)
+			{
+				GenerateNextChunk(LastCityLoc); // Generate ahead of the last city
+			}
+		}
+	}
 }
 
 void AOpenWorldGraphGenerator::GenerateWorldGraph()
@@ -74,7 +91,7 @@ void AOpenWorldGraphGenerator::ConnectCitiesAStar(int32 NodeA, int32 NodeB)
 	FVector End = CityGraph[NodeB].Location;
 	
 	float TotalDistance = FVector::Dist(Start, End);
-	int32 NumSegments = FMath::Max(2, FMath::RoundToInt(TotalDistance / 50000.0f));
+	int32 NumSegments = FMath::Max(2, FMath::RoundToInt(TotalDistance / 10000.0f)); // 100m segment precision for beautiful sweeping curves
 	
 	TArray<FVector> PathPoints;
 	float CurrentZ = GetProceduralTerrainZ(GetWorld(), Start.X, Start.Y);
@@ -191,14 +208,13 @@ float AOpenWorldGraphGenerator::GetProceduralTerrainZ(UWorld* WorldContext, floa
 	FCollisionQueryParams QueryParams;
 	QueryParams.bTraceComplex = false;
 	
-	if (WorldContext->LineTraceSingleByChannel(Hit, StartPos, EndPos, ECC_Visibility, QueryParams))
+	if (WorldContext->LineTraceSingleByChannel(Hit, StartPos, EndPos, ECC_WorldStatic, QueryParams))
 	{
 		return Hit.ImpactPoint.Z;
 	}
 
-	// Fallback to math if no physical landscape exists underneath
-	float Noise = FMath::PerlinNoise2D(FVector2D(X * 0.0001f, Y * 0.0001f));
-	return Noise * 100000.0f;
+	// Fallback to 0 if no physical landscape exists underneath (Blank Map fix)
+	return 0.0f;
 }
 
 float AOpenWorldGraphGenerator::GetVoronoiNoise(float X, float Y)

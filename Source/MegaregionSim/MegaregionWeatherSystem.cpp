@@ -36,6 +36,13 @@ void AMegaregionWeatherSystem::Tick(float DeltaTime)
 		FRotator SunRot = SunLight->GetActorRotation();
 		SunRot.Pitch += (TimeScale * DeltaTime);
 		SunLight->SetActorRotation(SunRot);
+		
+		if (MoonLight)
+		{
+			FRotator MoonRot = SunRot;
+			MoonRot.Pitch += 180.0f; // Moon is opposite to sun
+			MoonLight->SetActorRotation(MoonRot);
+		}
 	}
 
 	// 6. Smoothly transition weather (Fog/Rain) over 5 minutes (300 seconds).
@@ -100,6 +107,21 @@ void AMegaregionWeatherSystem::FindSunLight()
 	if (FoundLights.Num() > 0)
 	{
 		SunLight = Cast<ADirectionalLight>(FoundLights[0]);
+		
+		// Issue 20: Spawn MoonLight dynamically if it doesn't exist
+		if (!MoonLight)
+		{
+			FActorSpawnParameters SP;
+			SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			MoonLight = GetWorld()->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
+			if (MoonLight)
+			{
+				MoonLight->GetLightComponent()->SetIntensity(0.5f); // Soft moon intensity
+				MoonLight->GetLightComponent()->SetLightColor(FLinearColor(0.2f, 0.4f, 1.0f)); // Pale blue moonlight
+				MoonLight->GetLightComponent()->bAtmosphereSunLight = true;
+				MoonLight->GetLightComponent()->AtmosphereSunLightIndex = 1; // Secondary light for sky atmosphere
+			}
+		}
 	}
 }
 

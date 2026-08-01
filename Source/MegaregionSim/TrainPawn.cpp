@@ -94,8 +94,9 @@ ATrainPawn::ATrainPawn()
 	// ── Headlight ─────────────────────────────────────────────────────────────
 	Headlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("Headlight"));
 	Headlight->SetupAttachment(RootComponent);
-	Headlight->SetRelativeLocation(FVector(1000.0f, 0.0f, 150.0f));
+	Headlight->SetRelativeLocation(FVector(1000.0f, 0.0f, 350.0f));
 	Headlight->VolumetricScatteringIntensity = 1.0f;
+	Headlight->AttenuationRadius = 25000.0f;
 	Headlight->bUseTemperature = true;
 	Headlight->Temperature = 4000.0f;
 
@@ -359,6 +360,9 @@ void ATrainPawn::Tick(float DeltaTime)
 			SetTargetBrakePressure(FMath::Max(0.0f, TargetBrakePipePressure - 15.0f * DeltaTime));
 		else if (!PC->IsInputKeyDown(EKeys::SpaceBar) && TargetBrakePipePressure < 90.0f)
 			SetTargetBrakePressure(FMath::Min(90.0f, TargetBrakePipePressure + 5.0f * DeltaTime));
+			
+		if (PC->WasInputKeyJustPressed(EKeys::H))
+			PlayHorn();
 	}
 
 	// ── KINEMATIC SPEED MODEL ─────────────────────────────────────────────────
@@ -369,8 +373,8 @@ void ATrainPawn::Tick(float DeltaTime)
 	// Brakes reduce target speed
 	float BrakeRatio = BrakeCylinderPressure / 64.0f;
 
-	// Overhaul Air Brakes: simulate brake overheating if brakes held continuously > 60 seconds
-	if (BrakeRatio > 0.01f)
+	// Overhaul Air Brakes: simulate brake overheating if brakes held continuously > 60 seconds while moving
+	if (BrakeRatio > 0.01f && CurrentSpeedMs > 1.0f)
 	{
 		ContinuousBrakeTime += DeltaTime;
 		if (ContinuousBrakeTime > 60.0f)
@@ -469,6 +473,13 @@ void ATrainPawn::Tick(float DeltaTime)
 
 		CurrentDistanceAlongSpline += CurrentSpeedMs * 100.0f * DeltaTime;
 
+		// Issue 19: Derail if train falls off the end of the track to prevent car stacking
+		if (CurrentDistanceAlongSpline >= MainTrackSplineRef->GetSplineLength() - 100.0f)
+		{
+			DerailTrain();
+			return;
+		}
+
 		FVector NewLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
 		FRotator NewRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
 		
@@ -484,7 +495,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		SetActorLocationAndRotation(NewLoc, NewRot);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 2600.0f; // 26m per car slot
+		const float CarSpacing = 1900.0f; // 19m per car slot (tight coupling)
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
@@ -513,7 +524,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		SetActorLocation(NewLoc);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 2600.0f; // 26m per car slot
+		const float CarSpacing = 1900.0f; // 19m per car slot (tight coupling)
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
@@ -691,6 +702,13 @@ void ATrainPawn::ToggleHeadlight()
 void ATrainPawn::PlayHorn()
 {
 	UE_LOG(LogTemp, Log, TEXT("HORN BLAST! Speed=%.1f km/h Throttle=%.0f"), CurrentSpeedMs * 3.6f, CurrentThrottleNotch);
+	
+	// Fallback to an engine notification sound so the user definitively hears it
+	USoundBase* HornSound = LoadObject<USoundBase>(nullptr, TEXT("/Engine/EditorSounds/Notifications/CompileSuccess_Cue.CompileSuccess_Cue"));
+	if (HornSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HornSound, GetActorLocation());
+	}
 }
 
 void ATrainPawn::SwitchTrack()

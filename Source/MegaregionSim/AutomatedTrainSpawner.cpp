@@ -31,6 +31,7 @@ void UAutomatedTrainSpawner::SpawnRealAITrains()
 	AOpenWorldGraphGenerator* GraphGen = Cast<AOpenWorldGraphGenerator>(UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass()));
 	if (!GraphGen || GraphGen->CityGraph.Num() == 0) return;
 
+	int32 TrainIndex = 0;
 	for (const FCityNode& City : GraphGen->CityGraph)
 	{
 		FActorSpawnParameters SpawnParams;
@@ -44,13 +45,13 @@ void UAutomatedTrainSpawner::SpawnRealAITrains()
 			float ClosestKey = GraphGen->ExpressTrackForward->FindInputKeyClosestToWorldLocation(SpawnLocation);
 			SpawnLocation = GraphGen->ExpressTrackForward->GetLocationAtSplineInputKey(ClosestKey, ESplineCoordinateSpace::World);
 			SpawnRotation = GraphGen->ExpressTrackForward->GetRotationAtSplineInputKey(ClosestKey, ESplineCoordinateSpace::World);
-			SpawnLocation.Z += 100.0f;
+			SpawnLocation.Z += 20.0f;
 		}
 
 		ATrainPawn* NewTrain = GetWorld()->SpawnActor<ATrainPawn>(SpawnLocation, SpawnRotation, SpawnParams);
 		if (NewTrain)
 		{
-			NewTrain->bOnParallelTrack = true;
+			NewTrain->bOnParallelTrack = (TrainIndex % 2 == 0);
 			NewTrain->SpawnConsist();
 
 			AAITrainController* Controller = GetWorld()->SpawnActor<AAITrainController>(SpawnLocation, SpawnRotation, SpawnParams);
@@ -69,6 +70,7 @@ void UAutomatedTrainSpawner::SpawnRealAITrains()
 				Controller->ScheduleTime = FDateTime::Now() + FTimespan::FromHours(1);
 			}
 		}
+		TrainIndex++;
 	}
 }
 

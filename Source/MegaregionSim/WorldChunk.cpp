@@ -13,16 +13,19 @@ AWorldChunk::AWorldChunk()
 
 	PineTreeISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("PineTreeISM"));
 	PineTreeISM->SetupAttachment(RootComponent);
+	PineTreeISM->SetCollisionProfileName(TEXT("NoCollision"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PineAsset(TEXT("StaticMesh'/Game/FinalAssets/The_Pine_Tree.The_Pine_Tree'"));
 	if (PineAsset.Succeeded()) PineTreeISM->SetStaticMesh(PineAsset.Object);
 
 	BroadleafTreeISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("BroadleafTreeISM"));
 	BroadleafTreeISM->SetupAttachment(RootComponent);
+	BroadleafTreeISM->SetCollisionProfileName(TEXT("NoCollision"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> BroadleafAsset(TEXT("StaticMesh'/Game/FinalAssets/Broadleaf_Tree.Broadleaf_Tree'"));
 	if (BroadleafAsset.Succeeded()) BroadleafTreeISM->SetStaticMesh(BroadleafAsset.Object);
 
 	GrassISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GrassISM"));
 	GrassISM->SetupAttachment(RootComponent);
+	GrassISM->SetCollisionProfileName(TEXT("NoCollision"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassAsset(TEXT("StaticMesh'/Game/FinalAssets/Grass_patch.Grass_patch'"));
 	if (GrassAsset.Succeeded()) GrassISM->SetStaticMesh(GrassAsset.Object);
 
@@ -160,6 +163,10 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 				{
 					float GX = SpawnLoc.X + FMath::RandRange(-5000.0f, 5000.0f);
 					float GY = SpawnLoc.Y + FMath::RandRange(-5000.0f, 5000.0f);
+					
+					// Keep grass strictly off the tracks (at least 35m from spline point)
+					if (FVector2D::Distance(FVector2D(GX, GY), FVector2D(SplineLoc.X, SplineLoc.Y)) < 3500.0f) continue;
+					
 					float GZ = GetGroundHeightForChunk(GetWorld(), GX, GY, SpawnLoc.Z);
 
 					FTransform GT;
@@ -245,7 +252,9 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		FVector ParallelLoc = StartLoc + (RightVec * 3500.0f);
 		float ParallelGroundZ = GetGroundHeightForChunk(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
 		float ParallelZDiff = ParallelLoc.Z - ParallelGroundZ;
-		bool bParallelIsBridge = (ParallelZDiff > 500.0f);
+		// Sync bridge/tunnel logic between parallel tracks so they are unified
+		bool bParallelIsBridge = bIsBridge;
+		bool bParallelIsTunnel = bIsTunnel;
 
 		if (!bParallelIsBridge)
 		{
@@ -283,7 +292,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack));
 			BridgeISM->AddInstance(BridgeTransform);
 		}
-		else if (ParallelZDiff < -500.0f)
+		else if (bParallelIsTunnel)
 		{
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(ParallelLoc);

@@ -51,6 +51,7 @@ public:
 private:
 	// Find the Directional Light in the scene to rotate it
 	class ADirectionalLight* SunLight;
+	class ADirectionalLight* MoonLight;
 	
 	// Helper to find the sun
 	void FindSunLight();
