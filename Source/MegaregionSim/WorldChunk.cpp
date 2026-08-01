@@ -287,6 +287,12 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		FVector ParallelStartLoc = StartLoc + (RightVec * 3500.0f);
 		FVector ParallelEndLoc = EndLoc + (Spline->GetRightVectorAtDistanceAlongSpline(NextDist, ESplineCoordinateSpace::World) * 3500.0f);
 		
+		FVector ParallelLoc = ParallelStartLoc;
+		float ParallelGroundZ = GetGroundHeightForChunk(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
+		float ParallelZDiff = ParallelLoc.Z - ParallelGroundZ;
+		bool bParallelIsBridge = (ParallelZDiff > 500.0f);
+		bool bParallelIsTunnel = (ParallelZDiff < -500.0f);
+		
 		USplineMeshComponent* ParallelSplineMesh = NewObject<USplineMeshComponent>(this);
 		ParallelSplineMesh->RegisterComponent();
 		ParallelSplineMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
