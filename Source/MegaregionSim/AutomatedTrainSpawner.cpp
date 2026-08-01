@@ -67,8 +67,6 @@ void UAutomatedTrainSpawner::SpawnRealAITrains()
 				}
 				Controller->ScheduleTime = FDateTime::Now() + FTimespan::FromHours(1);
 			}
-		}
-		TrainIndex++;
 	}
 }
 
