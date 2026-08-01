@@ -224,6 +224,18 @@ void ATrainPawn::BeginPlay()
 	{
 		EconomySystem->GenerateRandomContract();
 	}
+
+	// Issue 8: Unlock Camera 360 degrees
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (PC->PlayerCameraManager)
+		{
+			PC->PlayerCameraManager->ViewYawMin = 0.0f;
+			PC->PlayerCameraManager->ViewYawMax = 359.9f;
+			PC->PlayerCameraManager->ViewPitchMin = -80.0f;
+			PC->PlayerCameraManager->ViewPitchMax = 80.0f;
+		}
+	}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -480,9 +492,10 @@ void ATrainPawn::Tick(float DeltaTime)
 			return;
 		}
 
+		// Calculate location and rotation
 		FVector NewLoc = MainTrackSplineRef->GetLocationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
 		FRotator NewRot = MainTrackSplineRef->GetRotationAtDistanceAlongSpline(CurrentDistanceAlongSpline, ESplineCoordinateSpace::World);
-		
+
 		// Apply parallel track lateral offset
 		if (bOnParallelTrack)
 		{
@@ -490,8 +503,22 @@ void ATrainPawn::Tick(float DeltaTime)
 		    NewLoc += RightVec * ParallelTrackOffset;
 		}
 
-		NewLoc.Z += 20.0f; // Offset to sit on tracks
-		
+		NewLoc.Z += 100.0f; // Track height
+
+		// Issue 4: AAA Kinematic Suspension Sway
+		// Simulates 200-ton physics by leaning the train mesh on curves and bobbing on Z
+		if (RootComponent)
+		{
+			float SpeedRatio = CurrentSpeedMs / MaxAbsoluteSpeedMs;
+			float SwayRoll = FMath::Sin(GetWorld()->GetTimeSeconds() * 2.0f) * 3.0f * SpeedRatio;
+			float SwayPitch = FMath::Cos(GetWorld()->GetTimeSeconds() * 3.0f) * 1.5f * SpeedRatio;
+			float BobZ = FMath::Sin(GetWorld()->GetTimeSeconds() * 10.0f) * 10.0f * SpeedRatio;
+
+			NewRot.Roll += SwayRoll;
+			NewRot.Pitch += SwayPitch;
+			NewLoc.Z += BobZ;
+		}
+
 		SetActorLocationAndRotation(NewLoc, NewRot);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────

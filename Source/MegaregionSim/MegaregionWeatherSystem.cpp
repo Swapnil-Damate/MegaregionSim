@@ -124,8 +124,7 @@ void AMegaregionWeatherSystem::FindSunLight()
 				UDirectionalLightComponent* DirComp = Cast<UDirectionalLightComponent>(MoonLight->GetLightComponent());
 				if (DirComp)
 				{
-					DirComp->bAtmosphereSunLight = true;
-					DirComp->AtmosphereSunLightIndex = 1; // Secondary light for sky atmosphere
+					DirComp->bAtmosphereSunLight = false; // Issue 3: Fix competing directional lights
 					DirComp->SetCastShadows(false); // Optimization for AAA open worlds
 				}
 			}

@@ -159,22 +159,27 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 					PineTreeISM->AddInstance(T);
 				
 				// Massive grass density underneath each tree (150 patches in 50m radius)
-				// Issue 8 & 9: AAA Grass density (Increase to 5000 instances and 3x scale)
-				for (int g = 0; g < 5000; g++)
+				// Issue 7 & 10: AAA Jittered Grid Grass Generation
+				const float GridStep = 250.0f;
+				for (float XOffset = -8000.0f; XOffset <= 8000.0f; XOffset += GridStep)
 				{
-					float GX = SpawnLoc.X + FMath::RandRange(-8000.0f, 8000.0f);
-					float GY = SpawnLoc.Y + FMath::RandRange(-8000.0f, 8000.0f);
-					
-					// Keep grass strictly off the tracks (at least 35m from spline point)
-					if (FVector2D::Distance(FVector2D(GX, GY), FVector2D(SplineLoc.X, SplineLoc.Y)) < 3500.0f) continue;
-					
-					float GZ = GetGroundHeightForChunk(GetWorld(), GX, GY, SpawnLoc.Z);
+					for (float YOffset = -8000.0f; YOffset <= 8000.0f; YOffset += GridStep)
+					{
+						// Add a tiny random jitter to the grid coordinate to make it look organic
+						float GX = SpawnLoc.X + XOffset + FMath::RandRange(-50.0f, 50.0f);
+						float GY = SpawnLoc.Y + YOffset + FMath::RandRange(-50.0f, 50.0f);
+						
+						// Keep grass strictly off the tracks (at least 35m from spline point)
+						if (FVector2D::Distance(FVector2D(GX, GY), FVector2D(SplineLoc.X, SplineLoc.Y)) < 3500.0f) continue;
+						
+						float GZ = GetGroundHeightForChunk(GetWorld(), GX, GY, SpawnLoc.Z);
 
-					FTransform GT;
-					GT.SetLocation(FVector(GX, GY, GZ));
-					GT.SetRotation(FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).Quaternion());
-					GT.SetScale3D(FVector(FMath::RandRange(2.5f, 4.0f))); // 3x larger grass
-					GrassISM->AddInstance(GT);
+						FTransform GT;
+						GT.SetLocation(FVector(GX, GY, GZ));
+						GT.SetRotation(FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).Quaternion());
+						GT.SetScale3D(FVector(FMath::RandRange(2.5f, 4.0f))); // 3x larger grass
+						GrassISM->AddInstance(GT);
+					}
 				}
 			}
 			else if (bUrban)
@@ -238,15 +243,12 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		bool bIsBridge = (ZDiff > 500.0f);
 		bool bIsTunnel = (ZDiff < -500.0f);
 
-		// Main track — skip if bridge (Bridge_Mesh already has tracks)
-		if (!bIsBridge)
-		{
-			FTransform T1;
-			T1.SetLocation(StartLoc + FVector(0.0f, 0.0f, 20.0f)); // Issue 2: Offset track mesh by 20cm
-			T1.SetRotation(StartRot.Quaternion());
-			T1.SetScale3D(FVector(ScaleAlongTrack));
-			TrackMeshISM->AddInstance(T1);
-		}
+		// Main track — spawn always (Issue 2 & 5: Ensure tracks lay continuously over bridges)
+		FTransform T1;
+		T1.SetLocation(StartLoc + FVector(0.0f, 0.0f, 20.0f)); 
+		T1.SetRotation(StartRot.Quaternion());
+		T1.SetScale3D(FVector(ScaleAlongTrack));
+		TrackMeshISM->AddInstance(T1);
 
 		// Parallel track
 		FVector ParallelLoc = StartLoc + (RightVec * 3500.0f);
@@ -256,14 +258,12 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		bool bParallelIsBridge = bIsBridge;
 		bool bParallelIsTunnel = bIsTunnel;
 
-		if (!bParallelIsBridge)
-		{
-			FTransform T2;
-			T2.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, 20.0f)); // Issue 2: Offset track mesh by 20cm
-			T2.SetRotation(StartRot.Quaternion());
-			T2.SetScale3D(FVector(ScaleAlongTrack));
-			TrackMeshISM->AddInstance(T2);
-		}
+		// Parallel track always spawns
+		FTransform T2;
+		T2.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, 20.0f)); 
+		T2.SetRotation(StartRot.Quaternion());
+		T2.SetScale3D(FVector(ScaleAlongTrack));
+		TrackMeshISM->AddInstance(T2);
 
 		// Bridge
 		if (bIsBridge)
@@ -277,10 +277,10 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		else if (bIsTunnel)
 		{
 			FTransform TunnelTransform;
-			// Issue 14: Offset Tunnel Z down so the walls sit flush against the ground
 			TunnelTransform.SetLocation(StartLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
+			// Issue 6: Increase Tunnel Z-Scale drastically to act as a barricade wall
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, ScaleAlongTrack, ScaleAlongTrack * 4.0f));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
 
@@ -298,7 +298,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, ScaleAlongTrack, ScaleAlongTrack * 4.0f));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
 

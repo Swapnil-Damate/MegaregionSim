@@ -29,29 +29,27 @@ void UAutomatedTrainSpawner::CheckStartMenuComplete()
 void UAutomatedTrainSpawner::SpawnRealAITrains()
 {
 	AOpenWorldGraphGenerator* GraphGen = Cast<AOpenWorldGraphGenerator>(UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass()));
-	if (!GraphGen || GraphGen->CityGraph.Num() == 0) return;
+	if (!GraphGen || !GraphGen->ExpressTrackForward) return;
 
-	int32 TrainIndex = 0;
-	for (const FCityNode& City : GraphGen->CityGraph)
+	// Issue 1 & 9: Only spawn 4 perfectly distributed AI trains across the massive track
+	int32 NumAITrains = 4;
+	float SplineLength = GraphGen->ExpressTrackForward->GetSplineLength();
+	float SegmentLength = SplineLength / (NumAITrains + 1);
+
+	for (int32 i = 1; i <= NumAITrains; i++)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		FVector SpawnLocation = City.Location + FVector(0, 0, 100.0f); 
-		FRotator SpawnRotation(0, 180.0f, 0);
-
-		if (GraphGen->ExpressTrackForward)
-		{
-			float ClosestKey = GraphGen->ExpressTrackForward->FindInputKeyClosestToWorldLocation(SpawnLocation);
-			SpawnLocation = GraphGen->ExpressTrackForward->GetLocationAtSplineInputKey(ClosestKey, ESplineCoordinateSpace::World);
-			SpawnRotation = GraphGen->ExpressTrackForward->GetRotationAtSplineInputKey(ClosestKey, ESplineCoordinateSpace::World);
-			SpawnLocation.Z += 20.0f;
-		}
+		float SpawnDistance = SegmentLength * i;
+		FVector SpawnLocation = GraphGen->ExpressTrackForward->GetLocationAtDistanceAlongSpline(SpawnDistance, ESplineCoordinateSpace::World);
+		FRotator SpawnRotation = GraphGen->ExpressTrackForward->GetRotationAtDistanceAlongSpline(SpawnDistance, ESplineCoordinateSpace::World);
+		SpawnLocation.Z += 20.0f; // Track height
 
 		ATrainPawn* NewTrain = GetWorld()->SpawnActor<ATrainPawn>(SpawnLocation, SpawnRotation, SpawnParams);
 		if (NewTrain)
 		{
-			NewTrain->bOnParallelTrack = (TrainIndex % 2 == 0);
+			NewTrain->bOnParallelTrack = (i % 2 == 0); // Alternate tracks
 			NewTrain->SpawnConsist();
 
 			AAITrainController* Controller = GetWorld()->SpawnActor<AAITrainController>(SpawnLocation, SpawnRotation, SpawnParams);
