@@ -26,8 +26,6 @@ AMegaregionGameMode::AMegaregionGameMode()
 
 void AMegaregionGameMode::BeginPlay()
 {
-	Super::BeginPlay();
-	
 	// AAA Production Ready Console Commands (Issue 12, Issue 16)
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
 	{
