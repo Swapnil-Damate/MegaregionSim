@@ -3,6 +3,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Components/DirectionalLightComponent.h"
 
 AMegaregionWeatherSystem::AMegaregionWeatherSystem()
 {
