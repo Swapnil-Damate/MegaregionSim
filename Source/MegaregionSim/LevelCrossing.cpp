@@ -43,6 +43,32 @@ void ALevelCrossing::Tick(float DeltaTime)
 		CurrentGateAngle = FMath::FInterpTo(CurrentGateAngle, TargetGateAngle, DeltaTime, 2.0f);
 		GateMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, CurrentGateAngle));
 	}
+
+	// Traffic Jams (Phase 3): Spawn cars queued up while gate is down
+	if (bIsTrainApproaching)
+	{
+		TrafficSpawnTimer -= DeltaTime;
+		if (TrafficSpawnTimer <= 0.0f && TrafficCars.Num() < 15) // Max 15 cars
+		{
+			// Spawn a car
+			UStaticMeshComponent* CarMesh = NewObject<UStaticMeshComponent>(this);
+			CarMesh->RegisterComponent();
+			CarMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+			
+			// Load a generic box representing a car
+			UStaticMesh* CarAsset = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+			if (CarAsset) CarMesh->SetStaticMesh(CarAsset);
+			
+			// Position it further back in the queue
+			float OffsetDist = 500.0f + (TrafficCars.Num() * 600.0f);
+			CarMesh->SetRelativeLocation(FVector(0.0f, OffsetDist, 50.0f));
+			CarMesh->SetRelativeScale3D(FVector(4.0f, 2.0f, 1.5f)); // Car size
+			
+			TrafficCars.Add(CarMesh);
+			
+			TrafficSpawnTimer = FMath::RandRange(1.5f, 4.0f);
+		}
+	}
 }
 
 void ALevelCrossing::OnTrainEnterWarningZone(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -60,5 +86,15 @@ void ALevelCrossing::OnTrainLeaveWarningZone(UPrimitiveComponent* OverlappedComp
 	{
 		bIsTrainApproaching = false;
 		TargetGateAngle = 0.0f; // Up
+		
+		// Clear traffic jam
+		for (UStaticMeshComponent* Car : TrafficCars)
+		{
+			if (Car)
+			{
+				Car->DestroyComponent();
+			}
+		}
+		TrafficCars.Empty();
 	}
 }

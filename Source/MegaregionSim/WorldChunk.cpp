@@ -4,6 +4,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "RailwaySignal.h"
 #include "Engine/World.h"
+#include "Components/TextRenderComponent.h"
 
 AWorldChunk::AWorldChunk()
 {
@@ -340,6 +341,19 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			TurnoutTransform.SetRotation(StartRot.Quaternion());
 			TurnoutTransform.SetScale3D(FVector(1.0f));
 			TurnoutISM->AddInstance(TurnoutTransform);
+			
+			// Phase 3: Holographic Switch Arrows
+			UStaticMeshComponent* Arrow = NewObject<UStaticMeshComponent>(this);
+			Arrow->RegisterComponent();
+			Arrow->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+			Arrow->SetWorldLocation(TurnoutLoc + FVector(0.0f, 0.0f, 500.0f)); // Hover above
+			Arrow->SetWorldRotation(FRotator(-90.0f, StartRot.Yaw, 0.0f)); // Point down
+			Arrow->SetWorldScale3D(FVector(3.0f));
+			
+			UStaticMesh* ArrowAsset = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cone.Cone"));
+			if (ArrowAsset) Arrow->SetStaticMesh(ArrowAsset);
+			
+			SwitchArrows.Add(Arrow);
 		}
 
 		// Catenary poles every 250m (25000 units)
@@ -415,6 +429,17 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			StTr.SetRotation(SplineRot.Quaternion());
 			StTr.SetScale3D(FVector(1.0f));
 			StationISM->AddInstance(StTr);
+			
+			// Phase 3: 3D Station Name
+			UTextRenderComponent* TextComp = NewObject<UTextRenderComponent>(this);
+			TextComp->RegisterComponent();
+			TextComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+			TextComp->SetWorldLocation(StationLoc + FVector(0.0f, 0.0f, 2000.0f));
+			TextComp->SetWorldRotation(SplineRot);
+			TextComp->SetText(FText::FromString(TEXT("GRAND CENTRAL TERMINAL")));
+			TextComp->SetWorldSize(500.0f);
+			TextComp->SetHorizontalAlignment(EHTA_Center);
+			StationNames.Add(TextComp);
 		}
 		else
 		{
@@ -427,6 +452,17 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			StTr.SetRotation(SplineRot.Quaternion());
 			StTr.SetScale3D(FVector(1.0f));
 			RuralStationISM->AddInstance(StTr);
+			
+			// Phase 3: 3D Station Name
+			UTextRenderComponent* TextComp = NewObject<UTextRenderComponent>(this);
+			TextComp->RegisterComponent();
+			TextComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+			TextComp->SetWorldLocation(StationLoc + FVector(0.0f, 0.0f, 1000.0f));
+			TextComp->SetWorldRotation(SplineRot);
+			TextComp->SetText(FText::FromString(TEXT("RURAL STATION")));
+			TextComp->SetWorldSize(250.0f);
+			TextComp->SetHorizontalAlignment(EHTA_Center);
+			StationNames.Add(TextComp);
 		}
 	}
 }

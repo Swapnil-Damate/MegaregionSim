@@ -78,6 +78,12 @@ protected:
 
 	UPROPERTY()
 	TArray<USplineMeshComponent*> SplineMeshes;
+	
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> SwitchArrows;
+	
+	UPROPERTY()
+	TArray<class UTextRenderComponent*> StationNames;
 
 	void GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist);
 	void GenerateTrackSplineMeshes(USplineComponent* Spline, float StartDist, float EndDist);

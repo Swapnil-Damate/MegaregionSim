@@ -39,4 +39,8 @@ private:
 	bool bIsTrainApproaching;
 	float CurrentGateAngle;
 	float TargetGateAngle;
+	float TrafficSpawnTimer = 0.0f;
+	
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> TrafficCars;
 };
