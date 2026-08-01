@@ -213,6 +213,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 
 	float ScaleAlongTrack = 1.0f;
 	if (TrackMeshISM->GetStaticMesh())
+	{
 		FVector MeshSize = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize();
 		float MeshLen = FMath::Max3(MeshSize.X, MeshSize.Y, MeshSize.Z);
 		if (MeshLen > 1.0f) // safe guard: only override if mesh bounds are non-zero

@@ -4,6 +4,7 @@
 #include "Engine/ExponentialHeightFog.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Components/DirectionalLightComponent.h"
+#include "Components/LightComponent.h"
 
 AMegaregionWeatherSystem::AMegaregionWeatherSystem()
 {
@@ -125,7 +126,6 @@ void AMegaregionWeatherSystem::FindSunLight()
 				{
 					DirComp->bAtmosphereSunLight = true;
 					DirComp->AtmosphereSunLightIndex = 1; // Secondary light for sky atmosphere
-					DirComp->bAffectsTranslucentLighting = false; // Issue 1: Fix Lumen/Forward shading conflict
 					DirComp->SetCastShadows(false); // Optimization for AAA open worlds
 				}
 			}
