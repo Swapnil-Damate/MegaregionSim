@@ -242,7 +242,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		if (!bIsBridge)
 		{
 			FTransform T1;
-			T1.SetLocation(StartLoc);
+			T1.SetLocation(StartLoc + FVector(0.0f, 0.0f, 20.0f)); // Issue 2: Offset track mesh by 20cm
 			T1.SetRotation(StartRot.Quaternion());
 			T1.SetScale3D(FVector(ScaleAlongTrack));
 			TrackMeshISM->AddInstance(T1);
@@ -259,7 +259,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		if (!bParallelIsBridge)
 		{
 			FTransform T2;
-			T2.SetLocation(ParallelLoc);
+			T2.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, 20.0f)); // Issue 2: Offset track mesh by 20cm
 			T2.SetRotation(StartRot.Quaternion());
 			T2.SetScale3D(FVector(ScaleAlongTrack));
 			TrackMeshISM->AddInstance(T2);
@@ -268,11 +268,9 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		// Bridge
 		if (bIsBridge)
 		{
-			// StartLoc is exactly on the ground, so we lift the track mesh 20cm so ballast sits on top
-		FVector TrackLoc = StartLoc + FVector(0.0f, 0.0f, 20.0f);
-		FTransform TrackTransform;
-		TrackTransform.SetLocation(TrackLoc);
-		TrackTransform.SetRotation(StartRot.Quaternion());
+			FTransform BridgeTransform;
+			BridgeTransform.SetLocation(StartLoc);
+			BridgeTransform.SetRotation(StartRot.Quaternion());
 			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack));
 			BridgeISM->AddInstance(BridgeTransform);
 		}
@@ -282,7 +280,6 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			// Issue 14: Offset Tunnel Z down so the walls sit flush against the ground
 			TunnelTransform.SetLocation(StartLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			float ScaleAlongTrack = 10000.0f / 100.0f;
 			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
@@ -301,7 +298,6 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			float ScaleAlongTrack = 10000.0f / 100.0f;
 			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
