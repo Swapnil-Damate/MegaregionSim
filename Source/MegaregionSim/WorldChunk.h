@@ -47,7 +47,13 @@ protected:
 	UInstancedStaticMeshComponent* BridgeISM;
 
 	UPROPERTY()
-	UInstancedStaticMeshComponent* TrackMeshISM;
+	UInstancedStaticMeshComponent* TrackMeshISM; // Kept for backwards compatibility but not used for tracks
+
+	UPROPERTY()
+	TArray<USplineMeshComponent*> TrackSplineMeshes;
+
+	UPROPERTY()
+	UInstancedStaticMeshComponent* ConcreteISM;
 
 	UPROPERTY()
 	UInstancedStaticMeshComponent* TurnoutISM;

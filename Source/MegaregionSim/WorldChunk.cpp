@@ -29,6 +29,12 @@ AWorldChunk::AWorldChunk()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassAsset(TEXT("StaticMesh'/Game/FinalAssets/Grass_patch.Grass_patch'"));
 	if (GrassAsset.Succeeded()) GrassISM->SetStaticMesh(GrassAsset.Object);
 
+	ConcreteISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("ConcreteISM"));
+	ConcreteISM->SetupAttachment(RootComponent);
+	ConcreteISM->SetCollisionProfileName(TEXT("NoCollision"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> ConcreteAsset(TEXT("StaticMesh'/Engine/BasicShapes/Plane.Plane'"));
+	if (ConcreteAsset.Succeeded()) ConcreteISM->SetStaticMesh(ConcreteAsset.Object);
+
 	SkyscraperISM = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("SkyscraperISM"));
 	SkyscraperISM->SetupAttachment(RootComponent);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SkyAsset(TEXT("StaticMesh'/Game/FinalAssets/Skyscraper.Skyscraper'"));
@@ -173,12 +179,23 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 						if (FVector2D::Distance(FVector2D(GX, GY), FVector2D(SplineLoc.X, SplineLoc.Y)) < 3500.0f) continue;
 						
 						float GZ = GetGroundHeightForChunk(GetWorld(), GX, GY, SpawnLoc.Z);
-
-						FTransform GT;
-						GT.SetLocation(FVector(GX, GY, GZ));
-						GT.SetRotation(FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).Quaternion());
-						GT.SetScale3D(FVector(FMath::RandRange(2.5f, 4.0f))); // 3x larger grass
-						GrassISM->AddInstance(GT);
+						
+						FTransform GrassTransform;
+						GrassTransform.SetLocation(FVector(GX, GY, GZ));
+						
+						if (bUrban)
+						{
+							// Procedural concrete paving
+							GrassTransform.SetScale3D(FVector(GridStep / 100.0f, GridStep / 100.0f, 1.0f));
+							GrassTransform.SetRotation(FQuat(FRotator(0, 0, 0)));
+							ConcreteISM->AddInstance(GrassTransform);
+						}
+						else
+						{
+							GrassTransform.SetScale3D(FVector(FMath::RandRange(1.0f, 2.0f)));
+							GrassTransform.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
+							GrassISM->AddInstance(GrassTransform);
+						}
 					}
 				}
 			}
@@ -231,39 +248,50 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 
 	for (float Dist = StartDist; Dist < EndDist; Dist += TrackSegLen)
 	{
+		float NextDist = FMath::Min(Dist + TrackSegLen, EndDist);
+		
 		FVector  StartLoc = Spline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		FVector  StartTan = Spline->GetTangentAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		
 		FRotator StartRot = Spline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		StartRot.Roll = 0.0f;
+		
+		FVector  EndLoc = Spline->GetLocationAtDistanceAlongSpline(NextDist, ESplineCoordinateSpace::World);
+		FVector  EndTan = Spline->GetTangentAtDistanceAlongSpline(NextDist, ESplineCoordinateSpace::World);
 
 		FVector RightVec = Spline->GetRightVectorAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 
-		// Check if this is a bridge segment
+		// Z-Snapping to physical progressive map (AAA Fix)
 		float GroundZ = GetGroundHeightForChunk(GetWorld(), StartLoc.X, StartLoc.Y, StartLoc.Z);
+		float EndGroundZ = GetGroundHeightForChunk(GetWorld(), EndLoc.X, EndLoc.Y, EndLoc.Z);
+		
+		// If ground drops significantly, treat as bridge/tunnel
 		float ZDiff = StartLoc.Z - GroundZ;
 		bool bIsBridge = (ZDiff > 500.0f);
 		bool bIsTunnel = (ZDiff < -500.0f);
 
-		// Main track — spawn always (Issue 2 & 5: Ensure tracks lay continuously over bridges)
-		FTransform T1;
-		T1.SetLocation(StartLoc + FVector(0.0f, 0.0f, 20.0f)); 
-		T1.SetRotation(StartRot.Quaternion());
-		T1.SetScale3D(FVector(ScaleAlongTrack));
-		TrackMeshISM->AddInstance(T1);
+		// Always elevate tracks above terrain/bridge by 20.0f to prevent Z-fighting clipping!
+		StartLoc.Z = StartLoc.Z + 20.0f;
+		EndLoc.Z = EndLoc.Z + 20.0f;
+
+		// 1. Spawn Curved Spline Mesh for Main Track
+		USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
+		SplineMesh->RegisterComponent();
+		SplineMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+		SplineMesh->SetStaticMesh(TrackMeshISM->GetStaticMesh());
+		SplineMesh->SetStartAndEnd(StartLoc, StartTan.GetClampedToMaxSize(TrackSegLen), EndLoc, EndTan.GetClampedToMaxSize(TrackSegLen), true);
+		TrackSplineMeshes.Add(SplineMesh);
 
 		// Parallel track
-		FVector ParallelLoc = StartLoc + (RightVec * 3500.0f);
-		float ParallelGroundZ = GetGroundHeightForChunk(GetWorld(), ParallelLoc.X, ParallelLoc.Y, ParallelLoc.Z);
-		float ParallelZDiff = ParallelLoc.Z - ParallelGroundZ;
-		// Sync bridge/tunnel logic between parallel tracks so they are unified
-		bool bParallelIsBridge = bIsBridge;
-		bool bParallelIsTunnel = bIsTunnel;
-
-		// Parallel track always spawns
-		FTransform T2;
-		T2.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, 20.0f)); 
-		T2.SetRotation(StartRot.Quaternion());
-		T2.SetScale3D(FVector(ScaleAlongTrack));
-		TrackMeshISM->AddInstance(T2);
+		FVector ParallelStartLoc = StartLoc + (RightVec * 3500.0f);
+		FVector ParallelEndLoc = EndLoc + (Spline->GetRightVectorAtDistanceAlongSpline(NextDist, ESplineCoordinateSpace::World) * 3500.0f);
+		
+		USplineMeshComponent* ParallelSplineMesh = NewObject<USplineMeshComponent>(this);
+		ParallelSplineMesh->RegisterComponent();
+		ParallelSplineMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+		ParallelSplineMesh->SetStaticMesh(TrackMeshISM->GetStaticMesh());
+		ParallelSplineMesh->SetStartAndEnd(ParallelStartLoc, StartTan.GetClampedToMaxSize(TrackSegLen), ParallelEndLoc, EndTan.GetClampedToMaxSize(TrackSegLen), true);
+		TrackSplineMeshes.Add(ParallelSplineMesh);
 
 		// Bridge
 		if (bIsBridge)
@@ -379,8 +407,11 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		if (Zone == EZoningClassification::UrbanCenter || Zone == EZoningClassification::Suburbs)
 		{
 			// Large passenger terminal
+			FVector StationLoc = Loc + Right * 2000.0f;
+			StationLoc.Z = GetGroundHeightForChunk(GetWorld(), StationLoc.X, StationLoc.Y, Loc.Z);
+			
 			FTransform StTr;
-			StTr.SetLocation(Loc + Right * 2000.0f); // 20m from track
+			StTr.SetLocation(StationLoc); // 20m from track
 			StTr.SetRotation(SplineRot.Quaternion());
 			StTr.SetScale3D(FVector(1.0f));
 			StationISM->AddInstance(StTr);
@@ -388,8 +419,11 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		else
 		{
 			// Small rural station
+			FVector StationLoc = Loc + Right * 1500.0f;
+			StationLoc.Z = GetGroundHeightForChunk(GetWorld(), StationLoc.X, StationLoc.Y, Loc.Z);
+			
 			FTransform StTr;
-			StTr.SetLocation(Loc + Right * 1500.0f); // 15m from track
+			StTr.SetLocation(StationLoc); // 15m from track
 			StTr.SetRotation(SplineRot.Quaternion());
 			StTr.SetScale3D(FVector(1.0f));
 			RuralStationISM->AddInstance(StTr);
