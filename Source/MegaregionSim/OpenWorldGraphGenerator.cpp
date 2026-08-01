@@ -77,14 +77,14 @@ void AOpenWorldGraphGenerator::ConnectCitiesAStar(int32 NodeA, int32 NodeB)
 	int32 NumSegments = FMath::Max(2, FMath::RoundToInt(TotalDistance / 50000.0f));
 	
 	TArray<FVector> PathPoints;
-	float CurrentZ = GetProceduralTerrainZ(Start.X, Start.Y);
+	float CurrentZ = GetProceduralTerrainZ(GetWorld(), Start.X, Start.Y);
 	
 	for (int32 i = 0; i <= NumSegments; i++)
 	{
 		float Alpha = (float)i / (float)NumSegments;
 		FVector Point = FMath::Lerp(Start, End, Alpha);
 		
-		float TerrainZ = GetProceduralTerrainZ(Point.X, Point.Y);
+		float TerrainZ = GetProceduralTerrainZ(GetWorld(), Point.X, Point.Y);
 		float SegmentDistance = (i == 0) ? 0.0f : TotalDistance / NumSegments;
 		
 		// 1. True A* Pathfinding (Feature 15): Evaluate distance, check 3% slope
@@ -179,11 +179,26 @@ FString AOpenWorldGraphGenerator::GenerateRandomCityName()
 		   Suffixes[FMath::RandRange(0, Suffixes.Num() - 1)];
 }
 
-float AOpenWorldGraphGenerator::GetProceduralTerrainZ(float X, float Y)
+float AOpenWorldGraphGenerator::GetProceduralTerrainZ(UWorld* WorldContext, float X, float Y)
 {
-	// 1000m alpine peaks (Phase 2 constraint)
+	if (!WorldContext) return 0.0f;
+
+	// Cast a ray from the sky to find the actual physical Landscape Z coordinate
+	FHitResult Hit;
+	FVector StartPos(X, Y, 100000.0f);
+	FVector EndPos(X, Y, -100000.0f);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.bTraceComplex = false;
+	
+	if (WorldContext->LineTraceSingleByChannel(Hit, StartPos, EndPos, ECC_Visibility, QueryParams))
+	{
+		return Hit.ImpactPoint.Z;
+	}
+
+	// Fallback to math if no physical landscape exists underneath
 	float Noise = FMath::PerlinNoise2D(FVector2D(X * 0.0001f, Y * 0.0001f));
-	return Noise * 100000.0f; // 1000 meters in UE units
+	return Noise * 100000.0f;
 }
 
 float AOpenWorldGraphGenerator::GetVoronoiNoise(float X, float Y)

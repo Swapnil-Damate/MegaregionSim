@@ -85,7 +85,7 @@ ATrainPawn::ATrainPawn()
 	SpringArmComp->SetRelativeRotation(FRotator(-25.0f, 0.0f, 0.0f));
 	SpringArmComp->TargetArmLength = 4500.0f;
 	SpringArmComp->bUsePawnControlRotation = true;
-	SpringArmComp->bDoCollisionTest = false;
+	SpringArmComp->bDoCollisionTest = true;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("LocoCamera"));
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
@@ -479,7 +479,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		    NewLoc += RightVec * ParallelTrackOffset;
 		}
 
-		NewLoc.Z += 100.0f; // Offset to sit on tracks
+		NewLoc.Z += 20.0f; // Offset to sit on tracks
 		
 		SetActorLocationAndRotation(NewLoc, NewRot);
 

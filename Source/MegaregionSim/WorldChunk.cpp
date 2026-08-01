@@ -106,7 +106,7 @@ void AWorldChunk::InitializeChunk(AOpenWorldGraphGenerator* Generator, USplineCo
 
 static float GetGroundHeightForChunk(UWorld* World, float X, float Y, float DefaultZ)
 {
-	return AOpenWorldGraphGenerator::GetProceduralTerrainZ(X, Y);
+	return AOpenWorldGraphGenerator::GetProceduralTerrainZ(World, X, Y);
 }
 
 void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float StartDist, float EndDist)
@@ -155,11 +155,11 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 				else
 					PineTreeISM->AddInstance(T);
 				
-				// Dense grass underneath each tree (15 patches)
-				for (int g = 0; g < 15; g++)
+				// Massive grass density underneath each tree (150 patches in 50m radius)
+				for (int g = 0; g < 150; g++)
 				{
-					float GX = SpawnLoc.X + FMath::RandRange(-1500.0f, 1500.0f);
-					float GY = SpawnLoc.Y + FMath::RandRange(-1500.0f, 1500.0f);
+					float GX = SpawnLoc.X + FMath::RandRange(-5000.0f, 5000.0f);
+					float GY = SpawnLoc.Y + FMath::RandRange(-5000.0f, 5000.0f);
 					float GZ = GetGroundHeightForChunk(GetWorld(), GX, GY, SpawnLoc.Z);
 
 					FTransform GT;

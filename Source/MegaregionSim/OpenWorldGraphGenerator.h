@@ -36,7 +36,7 @@ public:
 
 	// Procedural Math Functions
 	UFUNCTION(BlueprintCallable, Category = "Megaregion|PCG")
-	static float GetProceduralTerrainZ(float X, float Y);
+	static float GetProceduralTerrainZ(UWorld* WorldContext, float X, float Y);
 
 	UFUNCTION(BlueprintCallable, Category = "Megaregion|PCG")
 	static float GetVoronoiNoise(float X, float Y);
