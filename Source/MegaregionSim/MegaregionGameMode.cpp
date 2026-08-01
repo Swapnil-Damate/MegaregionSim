@@ -26,6 +26,15 @@ AMegaregionGameMode::AMegaregionGameMode()
 
 void AMegaregionGameMode::BeginPlay()
 {
+	Super::BeginPlay();
+	
+	// AAA Production Ready Console Commands (Issue 12, Issue 16)
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	{
+		PC->ConsoleCommand(TEXT("r.Lumen.Scene.SurfaceCache.AtlasSize 4096"), true);
+		PC->ConsoleCommand(TEXT("r.AutoExposure.LowPercent 50"), true);
+	}
+
 	// Ensure the OpenWorldGraphGenerator exists in the world BEFORE pawn spawns
 	AActor* GraphGen = UGameplayStatics::GetActorOfClass(GetWorld(), AOpenWorldGraphGenerator::StaticClass());
 	if (!GraphGen)

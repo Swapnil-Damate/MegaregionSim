@@ -200,17 +200,31 @@ float AOpenWorldGraphGenerator::GetProceduralTerrainZ(UWorld* WorldContext, floa
 {
 	if (!WorldContext) return 0.0f;
 
-	// Cast a ray from the sky to find the actual physical Landscape Z coordinate
-	FHitResult Hit;
+	// Issue 17-19: Cast a multi-ray from the sky to find the actual physical Landscape Z coordinate, ignoring the SkySphere
+	TArray<FHitResult> Hits;
 	FVector StartPos(X, Y, 100000.0f);
 	FVector EndPos(X, Y, -100000.0f);
 
 	FCollisionQueryParams QueryParams;
-	QueryParams.bTraceComplex = false;
+	QueryParams.bTraceComplex = true; // AAA Best Practice: Use complex trace for landscape precision
 	
-	if (WorldContext->LineTraceSingleByChannel(Hit, StartPos, EndPos, ECC_WorldStatic, QueryParams))
+	if (WorldContext->LineTraceMultiByChannel(Hits, StartPos, EndPos, ECC_WorldStatic, QueryParams))
 	{
-		return Hit.ImpactPoint.Z;
+		for (const FHitResult& HitResult : Hits)
+		{
+			AActor* HitActor = HitResult.GetActor();
+			if (HitActor)
+			{
+				FString ActorName = HitActor->GetName();
+				// Ignore Sky, Atmosphere, or Volumetric clouds
+				if (ActorName.Contains(TEXT("Sky")) || ActorName.Contains(TEXT("Atmosphere")) || ActorName.Contains(TEXT("Cloud")))
+				{
+					continue;
+				}
+				
+				return HitResult.ImpactPoint.Z;
+			}
+		}
 	}
 
 	// Fallback to 0 if no physical landscape exists underneath (Blank Map fix)

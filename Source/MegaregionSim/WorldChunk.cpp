@@ -130,8 +130,8 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 
 		for (float Offset = -LateralHalf; Offset <= LateralHalf; Offset += LateralStep)
 		{
-			// Keep a wide clearance corridor around the track itself
-			if (FMath::Abs(Offset) < 3000.0f) continue;
+				// Keep a massive clearance corridor around the track for AAA quality (Issue 10)
+				if (FMath::Abs(Offset) < 15000.0f) continue;
 
 			FVector SpawnXY = SplineLoc + (SplineRight * Offset);
 
@@ -159,10 +159,11 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 					PineTreeISM->AddInstance(T);
 				
 				// Massive grass density underneath each tree (150 patches in 50m radius)
-				for (int g = 0; g < 150; g++)
+				// Issue 8 & 9: AAA Grass density (Increase to 5000 instances and 3x scale)
+				for (int g = 0; g < 5000; g++)
 				{
-					float GX = SpawnLoc.X + FMath::RandRange(-5000.0f, 5000.0f);
-					float GY = SpawnLoc.Y + FMath::RandRange(-5000.0f, 5000.0f);
+					float GX = SpawnLoc.X + FMath::RandRange(-8000.0f, 8000.0f);
+					float GY = SpawnLoc.Y + FMath::RandRange(-8000.0f, 8000.0f);
 					
 					// Keep grass strictly off the tracks (at least 35m from spline point)
 					if (FVector2D::Distance(FVector2D(GX, GY), FVector2D(SplineLoc.X, SplineLoc.Y)) < 3500.0f) continue;
@@ -171,8 +172,8 @@ void AWorldChunk::GenerateTerrainInstances(USplineComponent* Spline, float Start
 
 					FTransform GT;
 					GT.SetLocation(FVector(GX, GY, GZ));
-					GT.SetScale3D(FVector(FMath::RandRange(0.5f, 1.8f)));
-					GT.SetRotation(FQuat(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0)));
+					GT.SetRotation(FRotator(0.0f, FMath::RandRange(0.0f, 360.0f), 0.0f).Quaternion());
+					GT.SetScale3D(FVector(FMath::RandRange(2.5f, 4.0f))); // 3x larger grass
 					GrassISM->AddInstance(GT);
 				}
 			}
@@ -210,10 +211,8 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 {
 	const float TrackSegLen = 2500.0f; // 25m per segment
 
-	// Compute scale from mesh bounding box Y-axis (track mesh is modeled sideways)
 	float ScaleAlongTrack = 1.0f;
 	if (TrackMeshISM->GetStaticMesh())
-	{
 		FVector MeshSize = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize();
 		float MeshLen = FMath::Max3(MeshSize.X, MeshSize.Y, MeshSize.Z);
 		if (MeshLen > 1.0f) // safe guard: only override if mesh bounds are non-zero
@@ -268,17 +267,21 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		// Bridge
 		if (bIsBridge)
 		{
-			FTransform BridgeTransform;
-			BridgeTransform.SetLocation(StartLoc);
-			BridgeTransform.SetRotation(StartRot.Quaternion());
+			// StartLoc is exactly on the ground, so we lift the track mesh 20cm so ballast sits on top
+		FVector TrackLoc = StartLoc + FVector(0.0f, 0.0f, 20.0f);
+		FTransform TrackTransform;
+		TrackTransform.SetLocation(TrackLoc);
+		TrackTransform.SetRotation(StartRot.Quaternion());
 			BridgeTransform.SetScale3D(FVector(ScaleAlongTrack));
 			BridgeISM->AddInstance(BridgeTransform);
 		}
 		else if (bIsTunnel)
 		{
 			FTransform TunnelTransform;
-			TunnelTransform.SetLocation(StartLoc);
+			// Issue 14: Offset Tunnel Z down so the walls sit flush against the ground
+			TunnelTransform.SetLocation(StartLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
+			float ScaleAlongTrack = 10000.0f / 100.0f;
 			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
@@ -295,8 +298,9 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		else if (bParallelIsTunnel)
 		{
 			FTransform TunnelTransform;
-			TunnelTransform.SetLocation(ParallelLoc);
+			TunnelTransform.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
+			float ScaleAlongTrack = 10000.0f / 100.0f;
 			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
@@ -316,23 +320,32 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		// Catenary poles every 250m (25000 units)
 		if (FMath::Fmod(Dist, 25000.0f) < TrackSegLen * 0.5f)
 		{
-			FVector CatenaryLoc = StartLoc + (RightVec * 500.0f); // 5m right of center
+		// Catenary logic
+		int i = FMath::RoundToInt(Dist / 25000.0f);
+		if (i % 2 == 0) // Every 200m
+		{
 			FTransform CatenaryTransform;
-			CatenaryTransform.SetLocation(CatenaryLoc);
-			CatenaryTransform.SetRotation(StartRot.Quaternion());
-			CatenaryTransform.SetScale3D(FVector(1.0f));
+			CatenaryTransform.SetLocation(StartLoc - (RightVec * 400.0f));
+			FRotator CatenaryRot = StartRot;
+			CatenaryRot.Yaw += 180.0f; // Issue 6: Rotate 180 degrees
+			CatenaryTransform.SetRotation(CatenaryRot.Quaternion());
 			CatenaryISM->AddInstance(CatenaryTransform);
+		}
 		}
 
 		// Milepost every 1km (100000 units)
 		if (FMath::Fmod(Dist, 100000.0f) < TrackSegLen * 0.5f)
 		{
-			FVector MilepostLoc = StartLoc - (RightVec * 500.0f); // 5m left of center
-			FTransform MilepostTransform;
-			MilepostTransform.SetLocation(MilepostLoc);
-			MilepostTransform.SetRotation(StartRot.Quaternion());
-			MilepostTransform.SetScale3D(FVector(0.5f));
-			MilepostISM->AddInstance(MilepostTransform);
+		int i = FMath::RoundToInt(Dist / 100000.0f);
+		if (i % 5 == 0) // Every 500m
+		{
+			// Issue 11: Push mileposts out 15m to prevent clipping
+			FVector MilepostLoc = StartLoc - (RightVec * 1500.0f);
+			FTransform MPTransform;
+			MPTransform.SetLocation(MilepostLoc);
+			MPTransform.SetRotation(StartRot.Quaternion());
+			MilepostISM->AddInstance(MPTransform);
+		}
 		}
 
 		// Railway crossing every 4km (400000 units)

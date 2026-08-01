@@ -495,7 +495,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		SetActorLocationAndRotation(NewLoc, NewRot);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 1900.0f; // 19m per car slot (tight coupling)
+		const float CarSpacing = 2200.0f; // 22m per car slot (Issue 3: Increase distance)
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
@@ -510,7 +510,7 @@ void ATrainPawn::Tick(float DeltaTime)
 				    CarLoc += CarRight * ParallelTrackOffset;
 				}
 				
-				CarLoc.Z += 100.0f;
+				CarLoc.Z += 20.0f; // Issue 3: Drop cars to 20cm so wheels touch rails
 				ConsistCars[i]->SetActorLocationAndRotation(CarLoc, CarRot);
 			}
 		}
@@ -520,17 +520,17 @@ void ATrainPawn::Tick(float DeltaTime)
 		// Fallback: move along forward vector
 		FVector ForwardVec = GetActorForwardVector();
 		FVector NewLoc     = GetActorLocation() + ForwardVec * (CurrentSpeedMs * 100.0f * DeltaTime);
-		NewLoc.Z = 130.0f;
+		NewLoc.Z = 20.0f;
 		SetActorLocation(NewLoc);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
-		const float CarSpacing = 1900.0f; // 19m per car slot (tight coupling)
+		const float CarSpacing = 2200.0f; // 22m per car slot (Issue 3: Increase distance)
 		for (int i = 0; i < ConsistCars.Num(); i++)
 		{
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
 			{
 				FVector CarLoc = GetActorLocation() - ForwardVec * CarSpacing * (i + 1);
-				CarLoc.Z = 130.0f;
+				CarLoc.Z = 20.0f; // Issue 3
 				ConsistCars[i]->SetActorLocationAndRotation(CarLoc, GetActorRotation());
 			}
 		}

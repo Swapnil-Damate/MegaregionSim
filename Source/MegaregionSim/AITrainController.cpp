@@ -83,17 +83,24 @@ void AAITrainController::ScanForSignals()
 	FVector TrainForward = ControlledTrain->GetActorForwardVector();
 	for (AActor* Actor : OtherTrains)
 	{
-		if (Actor != ControlledTrain)
+		ATrainPawn* OtherTrain = Cast<ATrainPawn>(Actor);
+		if (OtherTrain && OtherTrain != ControlledTrain)
 		{
-			FVector DirToOther = (Actor->GetActorLocation() - TrainLoc).GetSafeNormal();
-			float Dot = FVector::DotProduct(TrainForward, DirToOther);
-			if (Dot > 0.5f) 
+			// Issue 7: Only stop if the train is on the exact same track!
+			if (OtherTrain->bOnParallelTrack == ControlledTrain->bOnParallelTrack)
 			{
-				float Dist = FVector::Distance(TrainLoc, Actor->GetActorLocation());
-				if (Dist < 500000.0f) // 5km
+				FVector DirToOther = (OtherTrain->GetActorLocation() - TrainLoc).GetSafeNormal();
+				float Dot = FVector::DotProduct(TrainForward, DirToOther);
+				
+				// Issue 15: If the train is physically in front of us, trigger block
+				if (Dot > 0.5f) 
 				{
-					bBlockOccupied = true;
-					break;
+					float Dist = FVector::Distance(TrainLoc, OtherTrain->GetActorLocation());
+					if (Dist < 500000.0f) // 5km Block Check
+					{
+						bBlockOccupied = true;
+						break;
+					}
 				}
 			}
 		}
