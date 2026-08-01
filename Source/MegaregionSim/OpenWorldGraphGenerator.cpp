@@ -173,7 +173,9 @@ void AOpenWorldGraphGenerator::ConnectCitiesAStar(int32 NodeA, int32 NodeB)
 	
 	// 3. Spawn a WorldChunk to instantly generate trees and track meshes for this segment
 	float EndDist = ExpressTrackForward->GetSplineLength();
-	AWorldChunk* Chunk = GetWorld()->SpawnActor<AWorldChunk>(AWorldChunk::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
+	FActorSpawnParameters SP;
+	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AWorldChunk* Chunk = GetWorld()->SpawnActor<AWorldChunk>(AWorldChunk::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SP);
 	if (Chunk)
 	{
 		Chunk->InitializeChunk(this, ExpressTrackForward, StartDist, EndDist);

@@ -50,7 +50,10 @@ public:
 
 private:
 	// Find the Directional Light in the scene to rotate it
+	UPROPERTY()
 	class ADirectionalLight* SunLight;
+	
+	UPROPERTY()
 	class ADirectionalLight* MoonLight;
 	
 	// Helper to find the sun

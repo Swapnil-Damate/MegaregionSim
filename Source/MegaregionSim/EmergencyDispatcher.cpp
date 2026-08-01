@@ -21,7 +21,9 @@ void AEmergencyDispatcher::ReportDerailment(FVector DerailmentLocation)
 	// 2. Spawn Emergency Service vehicles (Fire/Ambulance) at nearest road splines
 	FVector SpawnLocation = DerailmentLocation + FVector(500.0f, 500.0f, 0.0f);
 	FRotator SpawnRotation = FRotator::ZeroRotator;
-	GetWorld()->SpawnActor<ADefaultPawn>(ADefaultPawn::StaticClass(), SpawnLocation, SpawnRotation);
+	FActorSpawnParameters SP;
+	SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	GetWorld()->SpawnActor<ADefaultPawn>(ADefaultPawn::StaticClass(), SpawnLocation, SpawnRotation, SP);
 }
 
 void AEmergencyDispatcher::FreezeSignalsToRed(FVector Location, float Radius)

@@ -107,6 +107,7 @@ void AMasterSimulationController::Tick(float DeltaTime)
 			if (GameMode->SelectedWeather == 1 || GameMode->SelectedWeather == 2) // Foggy or Overcast
 			{
 				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 				AExponentialHeightFog* Fog = GetWorld()->SpawnActor<AExponentialHeightFog>(FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 				if (Fog && Fog->GetComponent())
 				{

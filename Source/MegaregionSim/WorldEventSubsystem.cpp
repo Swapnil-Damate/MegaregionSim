@@ -44,9 +44,15 @@ void UWorldEventSubsystem::TriggerRandomDisaster()
 			// Spawn physics spheres for Avalanche
 			for (int i = 0; i < 10; ++i)
 			{
-				FVector SpawnLocation(FMath::RandRange(-500.0f, 500.0f), FMath::RandRange(-500.0f, 500.0f), 5000.0f);
+				// Use a mathematically distributed circle rather than pure overlapping randomness
+				float Angle = (i / 10.0f) * 2.0f * PI;
+				float Radius = 300.0f;
+				FVector SpawnLocation(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 5000.0f);
 				FRotator SpawnRotation(0.0f, 0.0f, 0.0f);
-				AStaticMeshActor* Boulder = World->SpawnActor<AStaticMeshActor>(SpawnLocation, SpawnRotation);
+				
+				FActorSpawnParameters SP;
+				SP.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				AStaticMeshActor* Boulder = World->SpawnActor<AStaticMeshActor>(SpawnLocation, SpawnRotation, SP);
 				if (Boulder)
 				{
 					Boulder->SetActorScale3D(FVector(5.0f));
