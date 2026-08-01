@@ -100,7 +100,9 @@ void UEconomySubsystem::GenerateRandomContract()
 
 	if (GetWorld())
 	{
-		GetWorld()->GetTimerManager().SetTimer(ContractTimerHandle, this, &UEconomySubsystem::OnContractExpired, 600.0f, false);
+		ContractStartTime = GetWorld()->GetTimeSeconds();
+		ContractDuration = 600.0f;
+		GetWorld()->GetTimerManager().SetTimer(ContractTimerHandle, this, &UEconomySubsystem::OnContractExpired, ContractDuration, false);
 	}
 }
 
@@ -134,10 +136,47 @@ void UEconomySubsystem::CompleteContract()
 		
 		if (GetWorld())
 		{
+			// Check for late penalty
+			float TimeElapsed = GetWorld()->GetTimeSeconds() - ContractStartTime;
+			if (TimeElapsed > ContractDuration)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Contract was late! Applying Late Penalty."));
+				AddFunds(-2500);
+			}
 			GetWorld()->GetTimerManager().ClearTimer(ContractTimerHandle);
 		}
 		ActiveContract = TEXT("");
 	}
+}
+
+void UEconomySubsystem::BuyUpgrade(FString UpgradeType)
+{
+	int32 Cost = 15000;
+	if (GetPlayerBalance() >= Cost)
+	{
+		if (UpgradeType == TEXT("Speed"))
+		{
+			SpeedUpgradeLevel++;
+			AddFunds(-Cost);
+			UE_LOG(LogTemp, Warning, TEXT("Speed Upgraded to Level %d"), SpeedUpgradeLevel);
+		}
+		else if (UpgradeType == TEXT("Brakes"))
+		{
+			BrakeUpgradeLevel++;
+			AddFunds(-Cost);
+			UE_LOG(LogTemp, Warning, TEXT("Brakes Upgraded to Level %d"), BrakeUpgradeLevel);
+		}
+	}
+}
+
+float UEconomySubsystem::GetContractTimeRemaining() const
+{
+	if (GetWorld() && !ActiveContract.IsEmpty())
+	{
+		float TimeElapsed = GetWorld()->GetTimeSeconds() - ContractStartTime;
+		return FMath::Max(0.0f, ContractDuration - TimeElapsed);
+	}
+	return 0.0f;
 }
 
 void UEconomySubsystem::OnContractExpired()

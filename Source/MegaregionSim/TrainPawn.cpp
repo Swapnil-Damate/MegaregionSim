@@ -609,8 +609,22 @@ void ATrainPawn::Tick(float DeltaTime)
 					if (Hit.GetActor() && Hit.GetActor()->GetName().Contains(TEXT("Signal")))
 						Signal = TEXT("RED");
 
+				float SpeedLimitKmh = 300.0f; // Could be dynamic based on zone
+				bool bInDeadEnd = false;
+				if (MainTrackSplineRef && (MainTrackSplineRef->GetSplineLength() - CurrentDistanceAlongSpline < 200000.0f))
+				{
+					bInDeadEnd = true;
+				}
+				
+				float TimeRemaining = 600.0f;
+				if (Eco)
+				{
+					TimeRemaining = Eco->GetContractTimeRemaining();
+				}
+
 				SimHUD->UpdateData(CurrentSpeedMs * 3.6f, CurrentThrottleNotch,
-					BrakePipePressure, BrakeCylinderPressure, Wallet, Signal, bLight);
+					BrakePipePressure, BrakeCylinderPressure, Wallet, Signal, bLight,
+					SpeedLimitKmh, bInDeadEnd, TimeRemaining);
 			}
 		}
 	}

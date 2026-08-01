@@ -29,6 +29,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Economy")
 	void CompleteContract();
+	
+	UFUNCTION(BlueprintCallable, Category = "Economy")
+	void BuyUpgrade(FString UpgradeType);
+	
+	UFUNCTION(BlueprintCallable, Category = "Economy")
+	float GetContractTimeRemaining() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Maintenance")
 	void WashTrain(float& TrainDirtiness, int32 Cost);
@@ -38,6 +44,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Legacy Campaign")
 	int32 DepotLevel = 1;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Upgrades")
+	int32 SpeedUpgradeLevel = 0;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Upgrades")
+	int32 BrakeUpgradeLevel = 0;
 
 private:
 	FSQLiteDatabase EconomyDB;
@@ -46,6 +58,9 @@ private:
 	FString ActiveCargo;
 
 	FTimerHandle ContractTimerHandle;
+	float ContractStartTime;
+	float ContractDuration;
+	
 	void OnContractExpired();
 
 	int32 CoalDeliveryCount = 0;
