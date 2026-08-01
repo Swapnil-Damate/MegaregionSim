@@ -17,7 +17,7 @@ ALevelCrossing::ALevelCrossing()
 	// The warning trigger extends far down the track (1km)
 	WarningTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("WarningTrigger"));
 	WarningTrigger->SetupAttachment(RootComponent);
-	WarningTrigger->SetBoxExtent(FVector(100000.0f, 500.0f, 500.0f)); // 1km long trigger
+	WarningTrigger->SetBoxExtent(FVector(50000.0f, 500.0f, 500.0f)); // 1km long trigger
 	WarningTrigger->SetCollisionProfileName(TEXT("Trigger"));
 	
 	WarningTrigger->OnComponentBeginOverlap.AddDynamic(this, &ALevelCrossing::OnTrainEnterWarningZone);
@@ -61,7 +61,7 @@ void ALevelCrossing::Tick(float DeltaTime)
 			
 			// Position it further back in the queue
 			float OffsetDist = 500.0f + (TrafficCars.Num() * 600.0f);
-			CarMesh->SetRelativeLocation(FVector(0.0f, OffsetDist, 50.0f));
+			CarMesh->SetRelativeLocation(FVector(0.0f, OffsetDist, 75.0f));
 			CarMesh->SetRelativeScale3D(FVector(4.0f, 2.0f, 1.5f)); // Car size
 			
 			TrafficCars.Add(CarMesh);

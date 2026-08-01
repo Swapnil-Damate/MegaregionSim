@@ -98,7 +98,7 @@ void UAutomatedTrainSpawner::Tick(float DeltaTime)
 			// Also hide consist cars
 			for (AActor* CarActor : AITrain->ConsistCars)
 			{
-				if (CarActor)
+				if (CarActor && IsValid(CarActor))
 				{
 					CarActor->SetActorHiddenInGame(!bShouldBeVisible);
 				}

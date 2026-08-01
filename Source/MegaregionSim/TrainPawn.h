@@ -126,6 +126,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Train Physics")
 	float CurrentDistanceAlongSpline;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics", meta=(ExposeOnSpawn="true"))
+	float InitialSpawnDistance = -1.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Train Physics")
 	bool bAutoRouteEnabled = false;
 

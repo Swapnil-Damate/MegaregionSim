@@ -22,9 +22,9 @@ ATrainCar::ATrainCar()
 	CarBody->SetBoxExtent(FVector(1000.0f, 150.0f, 200.0f)); // 20m long box
 
 	// Lock only rotation axes — Y translation lock removed because it fights coupler forces on curved track
-	CarBody->BodyInstance.bLockXRotation = true;
-	CarBody->BodyInstance.bLockYRotation = true;
-	CarBody->BodyInstance.bLockZRotation = true;
+	CarBody->BodyInstance.bLockXRotation = false;
+	CarBody->BodyInstance.bLockYRotation = false;
+	CarBody->BodyInstance.bLockZRotation = false;
 
 	// Phase 2.2 Fluid Dynamics
 	bIsLiquidCargo = true; // Default to true so we don't need Python set_editor_property
@@ -108,7 +108,8 @@ void ATrainCar::Tick(float DeltaTime)
 
 	if (bIsLiquidCargo)
 	{
-		float SloshAmount = FMath::Clamp(-Acceleration.X * 0.5f, -500.0f, 500.0f); 
+		float ForwardAccel = FVector::DotProduct(GetActorForwardVector(), Acceleration);
+		float SloshAmount = FMath::Clamp(-ForwardAccel * 0.5f, -500.0f, 500.0f); 
 		CurrentCenterOfMassOffset.X = FMath::FInterpTo(CurrentCenterOfMassOffset.X, SloshAmount, DeltaTime, 2.0f);
 		CarBody->SetCenterOfMass(CurrentCenterOfMassOffset);
 	}
@@ -164,7 +165,7 @@ void ATrainCar::OnCarHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, 
 		for (USceneComponent* Child : MeshChildren)
 		{
 			UStaticMeshComponent* Mesh = Cast<UStaticMeshComponent>(Child);
-			if (Mesh && Mesh->GetName() == TEXT("VisualMesh"))
+			if (Mesh == VisualMesh)
 			{
 				FVector CurrentScale = Mesh->GetRelativeScale3D();
 				// Squash the X (length) and expand the Y/Z (bulge outward)

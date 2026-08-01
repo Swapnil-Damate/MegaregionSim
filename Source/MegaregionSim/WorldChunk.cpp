@@ -238,7 +238,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 	if (TrackMeshISM->GetStaticMesh())
 	{
 		FVector MeshSize = TrackMeshISM->GetStaticMesh()->GetBoundingBox().GetSize();
-		float MeshLen = FMath::Max3(MeshSize.X, MeshSize.Y, MeshSize.Z);
+		float MeshLen = MeshSize.X;
 		if (MeshLen > 1.0f) // safe guard: only override if mesh bounds are non-zero
 		{
 			ScaleAlongTrack = TrackSegLen / MeshLen;
@@ -280,7 +280,14 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		SplineMesh->RegisterComponent();
 		SplineMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 		SplineMesh->SetStaticMesh(TrackMeshISM->GetStaticMesh());
-		SplineMesh->SetStartAndEnd(StartLoc, StartTan.GetClampedToMaxSize(TrackSegLen), EndLoc, EndTan.GetClampedToMaxSize(TrackSegLen), true);
+		
+		FTransform RootTransform = GetTransform();
+		FVector LocalStartLoc = RootTransform.InverseTransformPosition(StartLoc);
+		FVector LocalEndLoc = RootTransform.InverseTransformPosition(EndLoc);
+		FVector LocalStartTan = RootTransform.InverseTransformVector(StartTan);
+		FVector LocalEndTan = RootTransform.InverseTransformVector(EndTan);
+		
+		SplineMesh->SetStartAndEnd(LocalStartLoc, LocalStartTan.GetClampedToMaxSize(TrackSegLen), LocalEndLoc, LocalEndTan.GetClampedToMaxSize(TrackSegLen), true);
 		TrackSplineMeshes.Add(SplineMesh);
 
 		// Parallel track
@@ -297,7 +304,11 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 		ParallelSplineMesh->RegisterComponent();
 		ParallelSplineMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 		ParallelSplineMesh->SetStaticMesh(TrackMeshISM->GetStaticMesh());
-		ParallelSplineMesh->SetStartAndEnd(ParallelStartLoc, StartTan.GetClampedToMaxSize(TrackSegLen), ParallelEndLoc, EndTan.GetClampedToMaxSize(TrackSegLen), true);
+		
+		FVector LocalParallelStartLoc = RootTransform.InverseTransformPosition(ParallelStartLoc);
+		FVector LocalParallelEndLoc = RootTransform.InverseTransformPosition(ParallelEndLoc);
+		
+		ParallelSplineMesh->SetStartAndEnd(LocalParallelStartLoc, LocalStartTan.GetClampedToMaxSize(TrackSegLen), LocalParallelEndLoc, LocalEndTan.GetClampedToMaxSize(TrackSegLen), true);
 		TrackSplineMeshes.Add(ParallelSplineMesh);
 
 		// Bridge
@@ -314,8 +325,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(StartLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			// Only scale X to track segment length. Z scaled by 4 for barricade wall effect.
-			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 4.0f)); 
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 1.0f)); 
 			TunnelISM->AddInstance(TunnelTransform);
 		}
 
@@ -333,7 +343,7 @@ void AWorldChunk::GenerateTrackSplineMeshes(USplineComponent* Spline, float Star
 			FTransform TunnelTransform;
 			TunnelTransform.SetLocation(ParallelLoc + FVector(0.0f, 0.0f, -20.0f));
 			TunnelTransform.SetRotation(StartRot.Quaternion());
-			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 4.0f));
+			TunnelTransform.SetScale3D(FVector(ScaleAlongTrack, 1.0f, 1.0f));
 			TunnelISM->AddInstance(TunnelTransform);
 		}
 

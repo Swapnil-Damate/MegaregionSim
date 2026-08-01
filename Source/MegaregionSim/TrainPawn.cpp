@@ -71,7 +71,7 @@ ATrainPawn::ATrainPawn()
 			TrainMesh->SetRelativeScale3D(FVector(20.0f, 3.0f, 4.0f)); // 20m × 3m × 4m loco shape
 		}
 	}
-	TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	TrainMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f)); // Pull mesh up to match bottom of LocoBody extent
 	TrainMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// ── Acoustics & VFX ───────────────────────────────────────────────────────
@@ -171,9 +171,9 @@ void ATrainPawn::BeginPlay()
 	}
 
 	// Initialize starting location
-	if (GetActorLocation().X > 25000.0f)
+	if (InitialSpawnDistance >= 0.0f)
 	{
-		CurrentDistanceAlongSpline = GetActorLocation().X; // AI trains spawned far ahead
+		CurrentDistanceAlongSpline = InitialSpawnDistance; // AI trains
 	}
 	else
 	{
@@ -192,12 +192,12 @@ void ATrainPawn::BeginPlay()
 			StartLoc += (RightVec * 3500.0f);
 		}
 		
-		StartLoc.Z += 100.0f; // sit exactly on top of rails
+		StartLoc.Z += 170.0f; // sit exactly on top of rails (Track 20 + Extent 150)
 		SetActorLocationAndRotation(StartLoc, StartRot);
 	}
 	else
 	{
-		SetActorLocationAndRotation(FVector(CurrentDistanceAlongSpline, 0.0f, 130.0f), FRotator::ZeroRotator);
+		SetActorLocationAndRotation(FVector(CurrentDistanceAlongSpline, 0.0f, 170.0f), FRotator::ZeroRotator);
 	}
 
 	// Clear physics log
@@ -507,7 +507,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		    NewLoc += RightVec * ParallelTrackOffset;
 		}
 
-		NewLoc.Z += 20.0f; // Track height (matching consist cars so wheels touch rails)
+		NewLoc.Z += 170.0f; // Track height + LocoBody Extent
 
 		// Issue 4: AAA Kinematic Suspension Sway
 		// Simulates 200-ton physics by leaning the train mesh on curves and bobbing on Z
@@ -541,7 +541,7 @@ void ATrainPawn::Tick(float DeltaTime)
 				    CarLoc += CarRight * ParallelTrackOffset;
 				}
 				
-				CarLoc.Z += 20.0f; // Issue 3: Drop cars to 20cm so wheels touch rails
+				CarLoc.Z += 220.0f; // Track height + CarBody Extent (20 + 200)
 				ConsistCars[i]->SetActorLocationAndRotation(CarLoc, CarRot);
 			}
 		}
@@ -551,7 +551,7 @@ void ATrainPawn::Tick(float DeltaTime)
 		// Fallback: move along forward vector
 		FVector ForwardVec = GetActorForwardVector();
 		FVector NewLoc     = GetActorLocation() + ForwardVec * (CurrentSpeedMs * 100.0f * DeltaTime);
-		NewLoc.Z = 20.0f;
+		NewLoc.Z = GetActorLocation().Z;
 		SetActorLocation(NewLoc);
 
 		// ── Follow consist kinematically ──────────────────────────────────────────
@@ -561,7 +561,7 @@ void ATrainPawn::Tick(float DeltaTime)
 			if (ConsistCars[i] && IsValid(ConsistCars[i]))
 			{
 				FVector CarLoc = GetActorLocation() - ForwardVec * CarSpacing * (i + 1);
-				CarLoc.Z = 20.0f; // Issue 3
+				CarLoc.Z = GetActorLocation().Z; // Follow pawn exactly
 				ConsistCars[i]->SetActorLocationAndRotation(CarLoc, GetActorRotation());
 			}
 		}
