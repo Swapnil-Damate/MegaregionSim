@@ -119,8 +119,13 @@ void AMegaregionWeatherSystem::FindSunLight()
 			{
 				MoonLight->GetLightComponent()->SetIntensity(0.5f); // Soft moon intensity
 				MoonLight->GetLightComponent()->SetLightColor(FLinearColor(0.2f, 0.4f, 1.0f)); // Pale blue moonlight
-				MoonLight->GetLightComponent()->bAtmosphereSunLight = true;
-				MoonLight->GetLightComponent()->AtmosphereSunLightIndex = 1; // Secondary light for sky atmosphere
+				
+				UDirectionalLightComponent* DirComp = Cast<UDirectionalLightComponent>(MoonLight->GetLightComponent());
+				if (DirComp)
+				{
+					DirComp->bAtmosphereSunLight = true;
+					DirComp->AtmosphereSunLightIndex = 1; // Secondary light for sky atmosphere
+				}
 			}
 		}
 	}
